@@ -10,6 +10,8 @@
 
 #include <GLFW/glfw3.h> //must be loaded after loading opengl/glew
 
+#include "uiforce/UIForceWidget.h"
+
 #include <signal.h>
 bool fSimulationRunning = false;
 void sighandler(int){fSimulationRunning = false;}
@@ -33,11 +35,15 @@ const std::string JOINT_ANGLES_KEY  = "cs225a::robot::panda::sensors::q";
 const std::string JOINT_VELOCITIES_KEY = "cs225a::robot::panda::sensors::dq";
 const std::string OBJ_JOINT_ANGLES_KEY  = "cs225a::object::cup::sensors::q";
 const std::string OBJ_JOINT_VELOCITIES_KEY = "cs225a::object::cup::sensors::dq";
+const std::string OBJ_POS_KEY = "cs225a::object::pos";
+const std::string CAMERA_POS_KEY = "cs225a::camera::pos";
+const std::string CAMERA_ORI_KEY = "cs225a::camera::ori";
+const std::string CAMERA_DETECT_KEY = "cs225a::camera::detect";
 // - read:
 const std::string JOINT_TORQUES_COMMANDED_KEY  = "cs225a::robot::panda::actuators::fgc";
 
 // simulation thread
-void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim);
+void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim, UIForceWidget *ui_force_widget);
 
 // callback to print glfw errors
 void glfwError(int error, const char* description);
@@ -51,6 +57,12 @@ void keySelect(GLFWwindow* window, int key, int scancode, int action, int mods);
 // callback when a mouse button is pressed
 void mouseClick(GLFWwindow* window, int button, int action, int mods);
 
+// callback boolean check for objects in camera FOV
+bool cameraFOV(Vector3d object_pos, Vector3d camera_pos, Matrix3d camera_ori, double radius, double fov_angle);
+
+// helper function for cameraFOV
+bool compareSigns(double a, double b);
+
 // flags for scene camera movement
 bool fTransXp = false;
 bool fTransXn = false;
@@ -59,6 +71,7 @@ bool fTransYn = false;
 bool fTransZp = false;
 bool fTransZn = false;
 bool fRotPanTilt = false;
+bool fRobotLinkSelect = false;
 
 int main() {
 	cout << "Loading URDF world model file: " << world_file << endl;
@@ -124,7 +137,7 @@ int main() {
 
 	// create window and make it current
 	glfwWindowHint(GLFW_VISIBLE, 0);
-	GLFWwindow* window = glfwCreateWindow(windowW, windowH, "cs225a - lecture2-demo", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(windowW, windowH, "cs225a - collision-demo", NULL, NULL);
 	glfwSetWindowPos(window, windowPosX, windowPosY);
 	glfwShowWindow(window);
 	glfwMakeContextCurrent(window);
@@ -134,8 +147,12 @@ int main() {
 	glfwSetKeyCallback(window, keySelect);
 	glfwSetMouseButtonCallback(window, mouseClick);
 
-	// initialize glew
-	glewInitialize();
+	// init click force widget 
+	auto ui_force_widget = new UIForceWidget(robot_name, robot, graphics);
+	ui_force_widget->setEnable(false);
+
+	// // initialize glew
+	// glewInitialize();
 
 	// cache variables
 	double last_cursorx, last_cursory;
@@ -146,7 +163,10 @@ int main() {
 	redis_client.setEigenMatrixJSON(OBJ_JOINT_VELOCITIES_KEY, object->_dq); 
 
 	// start simulation thread
-	thread sim_thread(simulation, robot, object, sim);
+	thread sim_thread(simulation, robot, object, sim, ui_force_widget);
+
+	// initialize glew
+	glewInitialize();
 
 	// while window is open:
 	while (!glfwWindowShouldClose(window))
@@ -226,6 +246,38 @@ int main() {
 		}
 		graphics->setCameraPose(camera_name, camera_pos, cam_up_axis, camera_lookat);
 		glfwGetCursorPos(window, &last_cursorx, &last_cursory);
+
+		// click to drag the robot UI
+		graphics->setCameraPose(camera_name, camera_pos, cam_up_axis, camera_lookat);
+		glfwGetCursorPos(window, &last_cursorx, &last_cursory);
+
+		ui_force_widget->setEnable(fRobotLinkSelect);
+		if (fRobotLinkSelect)
+		{
+			double cursorx, cursory;
+			int wwidth_scr, wheight_scr;
+			int wwidth_pix, wheight_pix;
+			std::string ret_link_name;
+			Eigen::Vector3d ret_pos;
+
+			// get current cursor position
+			glfwGetCursorPos(window, &cursorx, &cursory);
+
+			glfwGetWindowSize(window, &wwidth_scr, &wheight_scr);
+			glfwGetFramebufferSize(window, &wwidth_pix, &wheight_pix);
+
+			int viewx = floor(cursorx / wwidth_scr * wwidth_pix);
+			int viewy = floor(cursory / wheight_scr * wheight_pix);
+
+			if (cursorx > 0 && cursory > 0)
+			{
+				ui_force_widget->setInteractionParams(camera_name, viewx, wheight_pix - viewy, wwidth_pix, wheight_pix);
+				//TODO: this behavior might be wrong. this will allow the user to click elsewhere in the screen
+				// then drag the mouse over a link to start applying a force to it.
+			}
+		}
+
+
 	}
 
 	// wait for simulation to finish
@@ -243,7 +295,7 @@ int main() {
 
 //------------------------------------------------------------------------------
 
-void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim)
+void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim, UIForceWidget *ui_force_widget)
 {
 	// prepare simulation
 	int dof = robot->dof();
@@ -260,6 +312,21 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 
 	// init variables
 	VectorXd g(dof);
+	Eigen::Vector3d ui_force;
+	ui_force.setZero();
+	Eigen::VectorXd ui_force_command_torques;
+	ui_force_command_torques.setZero();
+	Vector3d camera_pos, obj_pos;
+	Matrix3d camera_ori;
+	bool detect;
+	const std::string true_message = "Detected";
+	const std::string false_message = "Not Detected";
+	redis_client.set(CAMERA_DETECT_KEY, false_message);
+	Vector3d obj_offset;
+	obj_offset << 0, -0.35, 0.544;
+	Vector3d robot_offset;
+	robot_offset << 0.0, 0.3, 0.0;
+	double kvj = 10;
 
 	fSimulationRunning = true;
 	while (fSimulationRunning) {
@@ -270,7 +337,15 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 
 		// read arm torques from redis and apply to simulated robot
 		command_torques = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY);
-		sim->setJointTorques(robot_name, command_torques + g);
+
+		ui_force_widget->getUIForce(ui_force);
+		ui_force_widget->getUIJointTorques(ui_force_command_torques);
+
+		if (fRobotLinkSelect)
+			sim->setJointTorques(robot_name, command_torques + ui_force_command_torques - robot->_M*kvj*robot->_dq + g);
+		else
+			sim->setJointTorques(robot_name, command_torques - robot->_M*kvj*robot->_dq + g);
+		// sim->setJointTorques(robot_name, command_torques + g);
 
 		// integrate forward
 		double curr_time = timer.elapsedTime();
@@ -286,12 +361,33 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 		sim->getJointVelocities(obj_name, object->_dq);
 		object->updateModel();
 
+		object->positionInWorld(obj_pos, "link6");
+		robot->positionInWorld(camera_pos, "link7");
+		robot->rotationInWorld(camera_ori, "link7");  // local to world frame 
+
+		// add position offset in world.urdf file 
+		obj_pos += obj_offset;
+		camera_pos += robot_offset;
+
 		// write new robot state to redis
 		redis_client.setEigenMatrixJSON(JOINT_ANGLES_KEY, robot->_q);
 		redis_client.setEigenMatrixJSON(JOINT_VELOCITIES_KEY, robot->_dq);
 
 		redis_client.setEigenMatrixJSON(OBJ_JOINT_ANGLES_KEY, object->_q);
 		redis_client.setEigenMatrixJSON(OBJ_JOINT_VELOCITIES_KEY, object->_dq);
+		redis_client.setEigenMatrixJSON(OBJ_POS_KEY, obj_pos);
+
+		redis_client.setEigenMatrixJSON(CAMERA_POS_KEY, camera_pos);
+		redis_client.setEigenMatrixJSON(CAMERA_ORI_KEY, camera_ori);
+
+		// object camera detect 
+		detect = cameraFOV(obj_pos, camera_pos, camera_ori, 1.0, M_PI/6);
+		if (detect == true) {
+			redis_client.set(CAMERA_DETECT_KEY, true_message);
+		}
+		else {
+			redis_client.set(CAMERA_DETECT_KEY, false_message);
+		}
 
 		//update last time
 		last_time = curr_time;
@@ -327,6 +423,67 @@ bool glewInitialize() {
 	}
 	#endif
 	return ret;
+}
+
+
+//------------------------------------------------------------------------------
+	/**
+     * @brief Boolean check if specified object is inside camera fov.
+     * @param object_pos Object position in world frame.
+     * @param camera_pos Camera position in world frame.
+     * @param camera_ori Camera DCM matrix from local to world frame.
+     * @param radius Camera detection radius.
+     * @param fov_angle Camera FOV angle 
+     */
+
+bool cameraFOV(Vector3d object_pos, Vector3d camera_pos, Matrix3d camera_ori, double radius, double fov_angle) {
+	// init
+	Vector3d a, b, c, d;
+	// Vector3d normal = camera_ori.col(2);  // normal vector in world frame 
+
+	// local camera frame vertex coordinates 
+	Vector3d v1, v2, v3; 
+	v1 << 0, -radius*tan(fov_angle), radius;
+	v2 << radius*tan(fov_angle)*cos(M_PI/6), radius*tan(fov_angle)*sin(M_PI/6), radius;
+	v3 << -radius*tan(fov_angle)*cos(M_PI/6), radius*tan(fov_angle)*sin(M_PI/6), radius;
+
+	// world frame vertex coordinates centered at the object 
+	a = camera_pos - object_pos;
+	b = camera_pos + camera_ori*v1 - object_pos;
+	c = camera_pos + camera_ori*v2 - object_pos;
+	d = camera_pos + camera_ori*v3 - object_pos;
+
+	// calculate if object position is inside tetrahedron 
+    vector<double> B(4);
+    B.at(0) = ( -1*(b(0)*c(1)*d(2) - b(0)*c(2)*d(1) - b(1)*c(0)*d(2) + b(1)*c(2)*d(0) + b(2)*c(0)*d(1) - b(2)*c(1)*d(0)) );
+    B.at(1) = ( a(0)*c(1)*d(2) - a(0)*c(2)*d(1) - a(1)*c(0)*d(2) + a(1)*c(2)*d(0) + a(2)*c(0)*d(1) - a(2)*c(1)*d(0) );
+    B.at(2) = ( -1*(a(0)*b(1)*d(2) - a(0)*b(2)*d(1) - a(1)*b(0)*d(2) + a(1)*b(2)*d(0) + a(2)*b(0)*d(1) - a(2)*b(1)*d(0)) );
+    B.at(3) = ( a(0)*b(1)*c(2) - a(0)*b(2)*c(1) - a(1)*b(0)*c(2) + a(1)*b(2)*c(0) + a(2)*b(0)*c(1) - a(2)*b(1)*c(0) );
+    double detM = B.at(0) + B.at(1) + B.at(2) + B.at(3);
+
+	// sign check
+	bool test;
+	for (int i = 0; i < B.size(); ++i) {
+		test = compareSigns(detM, B.at(i));
+		if (test == false) {
+			return false;
+		}
+	}
+	return true;
+}
+
+//------------------------------------------------------------------------------
+
+bool compareSigns(double a, double b) {
+    if (a > 0 && b > 0) {
+        return true;
+    }
+    else if (a < 0 && b < 0) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -381,7 +538,7 @@ void mouseClick(GLFWwindow* window, int button, int action, int mods) {
 			break;
 		// if right click: don't handle. this is for menu selection
 		case GLFW_MOUSE_BUTTON_RIGHT:
-			//TODO: menu
+			fRobotLinkSelect = set;
 			break;
 		// if middle click: don't handle. doesn't work well on laptops
 		case GLFW_MOUSE_BUTTON_MIDDLE:
