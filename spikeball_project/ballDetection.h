@@ -8,8 +8,8 @@
 using namespace std;
 using namespace Eigen;
 
-bool hasHitObject();
-Vector3d getNoisyPosition();
+bool hasHitObject(Sai2Model::Sai2Model ball);
+Vector3d getNoisyPosition(Sai2Model::Sai2Model ball);
 int getRobot(endPos);
 void moveRobot(endPos);
 
