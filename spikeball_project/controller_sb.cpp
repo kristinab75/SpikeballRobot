@@ -1,6 +1,7 @@
 #include <Sai2Model.h>
 #include "redis/RedisClient.h"
 #include "timer/LoopTimer.h"
+#include "ballDetection.h"
 
 #include <iostream>
 #include <string>
