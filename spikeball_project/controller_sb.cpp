@@ -63,6 +63,12 @@ int main() {
 	robot->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEY);
 	robot->updateModel();
 
+	// load ball    
+        auto ball = new Sai2Model::Sai2Model(ball_file, false);         
+        ball->_q = redis_client.getEigenMatrixJSON(BALL_ANGLES_KEY);    
+        ball->_dq = redis_client.getEigenMatrixJSON(BALL_VELOCITIES_KEY);
+        ball->updateModel();   
+
 	// prepare controller
 	int dof = robot->dof();
 	const string link_name = "link7";

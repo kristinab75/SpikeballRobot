@@ -50,6 +50,7 @@ const std::string NET_JOINT_ANGLES_KEY  = "cs225a::object::Net::sensors::q";	//+
 const std::string NET_JOINT_VELOCITIES_KEY = "cs225a::object::Net::sensors::dq";	//+++++++++
 // - write:
 const std::string JOINT_TORQUES_COMMANDED_KEY  = "cs225a::robot::panda::actuators::fgc";
+const std::string BALL_TORQUES_COMMANDED_KEY  = "cs225a::robot::ball::actuators::fgc";  //+++++++++
 
 int main() {
 
@@ -127,6 +128,11 @@ int main() {
 
         runloop = true;
 
+	// Initialize ball velocity
+	VectorXd control_torques_ball = VectorXd::Zero(ball->dof());
+	control_torques_ball << 1,1, 1,0,0,0;
+	redis_client.setEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY, control_torques_ball);
+
 while (runloop)
         {
                 fTimerDidSleep = timer.waitForNextLoop();
@@ -183,7 +189,7 @@ while (runloop)
 
 		//temp fix for one robot
 		int robot_des = 0;
-		if (x_pred[0] < x_world[0] - 15) {
+		if (x_pred[0] < x_world[0] - .5) {
 			robot_des = 1;
 		}
 

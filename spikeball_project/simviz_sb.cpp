@@ -1,6 +1,6 @@
 // example visulaization program
 
-#include <GL/glew.h>
+//#include <GL/glew.h>
 #include "Sai2Model.h"
 #include "Sai2Graphics.h"
 #include "Sai2Simulation.h"
@@ -33,8 +33,15 @@ const std::string JOINT_ANGLES_KEY  = "cs225a::robot::panda::sensors::q";
 const std::string JOINT_VELOCITIES_KEY = "cs225a::robot::panda::sensors::dq";
 const std::string OBJ_JOINT_ANGLES_KEY  = "cs225a::object::cup::sensors::q";
 const std::string OBJ_JOINT_VELOCITIES_KEY = "cs225a::object::cup::sensors::dq";
+const std::string BALL_ANGLES_KEY  = "cs225a::robot::ball::sensors::q";         //+++++++++
+const std::string BALL_VELOCITIES_KEY = "cs225a::robot::ball::sensors::dq";     //+++++++++
+
+const std::string NET_JOINT_ANGLES_KEY  = "cs225a::object::Net::sensors::q";    //+++++++++
+const std::string NET_JOINT_VELOCITIES_KEY = "cs225a::object::Net::sensors::dq";        //+++++++++
+
 // - read:
 const std::string JOINT_TORQUES_COMMANDED_KEY  = "cs225a::robot::panda::actuators::fgc";
+const std::string BALL_TORQUES_COMMANDED_KEY  = "cs225a::robot::ball::actuators::fgc";  //+++++++++
 
 // simulation thread
 void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim);
@@ -135,7 +142,7 @@ int main() {
 	glfwSetMouseButtonCallback(window, mouseClick);
 
 	// initialize glew
-	glewInitialize();
+	//glewInitialize();
 
 	// cache variables
 	double last_cursorx, last_cursory;
