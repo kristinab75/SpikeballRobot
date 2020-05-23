@@ -27,7 +27,7 @@ double sat(double x) {
 // ball detection functions
 Vector3d getNoisyPosition(Vector3d posInWorld);
 Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r);
-Vector3d getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r);
+MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r);
 
 #define RAD(deg) ((double)(deg) * M_PI / 180.0)
 
@@ -394,10 +394,11 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
      // second rotation about y'
      MatrixXd Rd2 = MatrixXd::Zero(3,3);
      Rd2 << cos(z_angle), 0, sin(z_angle),
-               0, 1, 0
+               0, 1, 0,
                -sin(z_angle), 0, cos(z_angle) ;
      
-     MatrixXd Rd = Rd1 * Rd2; // the order of this is important, might need to flip!
+     MatrixXd Rd = MatrixXd::Zero(3,3);
+     Rd = Rd1 * Rd2; // the order of this is important, might need to flip!
      
     return Rd;
 }
