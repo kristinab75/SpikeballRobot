@@ -92,6 +92,7 @@ int main() {
 
 	// load robot objects
 	auto object = new Sai2Model::Sai2Model(obj_file, false);
+	object->_dq << 0,0,0;
 	object->updateModel();
 
 	// load simulation world
@@ -148,8 +149,8 @@ int main() {
 
 	redis_client.setEigenMatrixJSON(JOINT_ANGLES_KEY, robot->_q); 
 	redis_client.setEigenMatrixJSON(JOINT_VELOCITIES_KEY, robot->_dq); 
-	redis_client.setEigenMatrixJSON(OBJ_JOINT_ANGLES_KEY, object->_q); 
-	redis_client.setEigenMatrixJSON(OBJ_JOINT_VELOCITIES_KEY, object->_dq);
+	//redis_client.setEigenMatrixJSON(OBJ_JOINT_ANGLES_KEY, object->_q); 
+	//redis_client.setEigenMatrixJSON(OBJ_JOINT_VELOCITIES_KEY, object->_dq);
 
 	redis_client.setEigenMatrixJSON(BALL_ANGLES_KEY, object->_q);
         redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, object->_dq);
@@ -283,10 +284,10 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 
 		// read arm torques from redis and apply to simulated robot
 		command_torques = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY);
-		sim->setJointTorques(robot_name, command_torques + g);
+		sim->setJointTorques(robot_name, command_torques);
 
 		command_torques_ball = redis_client.getEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY);
-                sim->setJointTorques(obj_name, command_torques_ball + g); 
+                sim->setJointTorques(obj_name, command_torques_ball); 
 
 		// integrate forward
 		double curr_time = timer.elapsedTime();

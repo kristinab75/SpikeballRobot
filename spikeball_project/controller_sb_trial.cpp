@@ -130,7 +130,7 @@ int main() {
 
 	// Initialize ball velocity
 	VectorXd control_torques_ball = VectorXd::Zero(ball->dof());
-	control_torques_ball << 1,1, 1,0,0,0;
+	control_torques_ball << -1, 1, 0,0,0,0;
 	redis_client.setEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY, control_torques_ball);
 
 while (runloop)
