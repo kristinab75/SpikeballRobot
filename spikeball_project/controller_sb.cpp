@@ -27,6 +27,7 @@ double sat(double x) {
 
 // Location of URDF files specifying world and robot information
 const string robot_file = "./resources/panda_spikeball.urdf";
+const string ball_file = "./resources/ball.urdf";
 
 // Redis is just a key value store, publish/subscribe is also possible
 // The visualizer and simulator will have keys like "cs225a::robot::{ROBOTNAME}::sensors::q"
@@ -35,8 +36,12 @@ const string robot_file = "./resources/panda_spikeball.urdf";
 // - read:
 const std::string JOINT_ANGLES_KEY  = "cs225a::robot::panda::sensors::q";
 const std::string JOINT_VELOCITIES_KEY = "cs225a::robot::panda::sensors::dq";
-const std::string OBJ_JOINT_ANGLES_KEY  = "cs225a::object::cup::sensors::q";
-const std::string OBJ_JOINT_VELOCITIES_KEY = "cs225a::object::cup::sensors::dq";
+
+const std::string BALL_ANGLES_KEY  = "cs225a::robot::ball::sensors::q";
+const std::string BALL_VELOCITIES_KEY = "cs225a::robot::ball::sensors::dq";
+
+const std::string NET_JOINT_ANGLES_KEY  = "cs225a::object::Net::sensors::q";
+const std::string NET_JOINT_VELOCITIES_KEY = "cs225a::object::Net::sensors::dq";
 // - write:
 const std::string JOINT_TORQUES_COMMANDED_KEY  = "cs225a::robot::panda::actuators::fgc";
 
