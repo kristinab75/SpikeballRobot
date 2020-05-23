@@ -326,8 +326,9 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     return endPos;
 }
         
-                      
-Vector3d getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r) {
+           
+
+ MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r) {
 
     double g = 9.81;
 
@@ -361,27 +362,44 @@ Vector3d getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd t
     endPos << x_exit, y_exit, z_exit;
 
 
-
     /// Velocity at Paddle
     Vector3d endVel;
     endVel << initVel(0), initVel(1), -g*t_exit + initVel(2);
 
-    double angle_from = atan2(initVel(0),initVel(1)) * (180/M_PI); // [deg]
-    double angle_to   = atan2(x_exit - targetPos(0), y_exit - targetPos(1)) * (180/M_PI);
-    double angle = (angle_to + angle_from)/2 + 90; // end effector angle XY
+//     double angle_from = atan2(initVel(0),initVel(1)); // * (180/M_PI); //
+//     double angle_to   = atan2(x_exit - targetPos(0), y_exit - targetPos(1)); // * (180/M_PI);
+//     double angle = (angle_to + angle_from)/2 + M_PI/2; // end effector angle XY
+//    Vector3d vecToTarget;
+//        vecToTarget << targetPos(0) - x_exit, targetPos(1) - y_exit, targetPos(2) - z_exit;
+//
+//    double d = pow(vecToTarget(0),2) + pow(vecToTarget(1),2) + pow(vecToTarget(2),2);
+//    double v0 = pow(endVel(0),2)+ pow(endVel(1),2) + pow(endVel(2),2);
+//
+//    double z_angle = (1/2)*asin(d*g/pow(v0,2));
 
-    Vector3d vecToTarget;
-        vecToTarget << targetPos(0) - x_exit, targetPos(1) - y_exit, targetPos(2) - z_exit;
+
+    double rot_angle = atan2(initVel(2), initVel(1));
     
-    double d = pow(vecToTarget(0),2) + pow(vecToTarget(1),2) + pow(vecToTarget(2),2);
-    double v0 = pow(endVel(0),2)+ pow(endVel(1),2) + pow(endVel(2),2);
-
-    double z_angle = (180*M_PI)* (1/2)*asin(d*g/pow(v0,2));
-
-
-    Vector3d endEffAngles;
-    endEffAngles << angle, angle, z_angle; // [deg]
-    return endEffAngles;
+     // first rotation about z
+    MatrixXd Rd1 = MatrixXd::Zero(3,3);
+    Rd1 << cos(rot_angle), -sin(rot_angle), 0,
+            sin(rot_angle),cos(rot_angle), 0,
+            0, 0, 1 ;
+     
+     // find new velocity vector in new frame
+     Vector3d vecInFrame2 = Rd1 * endVel;
+     
+     double z_angle = atan2(vecInFrame2(2), vecInFrame2(0));
+     
+     // second rotation about y'
+     MatrixXd Rd2 = MatrixXd::Zero(3,3);
+     Rd2 << cos(z_angle), 0, sin(z_angle),
+               0, 1, 0
+               -sin(z_angle), 0, cos(z_angle) ;
+     
+     MatrixXd Rd = Rd1 * Rd2; // the order of this is important, might need to flip!
+     
+    return Rd;
 }
 
 
