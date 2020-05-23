@@ -53,7 +53,7 @@ void ballDetection::moveRobot(VectorXd predEndPos){
 /*Aubrey 
 * Returns the predicted end position of the ball given a position and velocity of the ball's trajectory
 */
-VectorXd ballDetection::getPredicition(VectorXd initPos, VextorXd initVel) {
+Vector3d ballDetection::getPredicition(Vector3d initPos, Vextor3d initVel) {
 
 }
 
