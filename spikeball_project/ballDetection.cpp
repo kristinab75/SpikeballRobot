@@ -1,6 +1,7 @@
 #include "ballDetection.h"
 #include <iostream>
 #include <string>
+#include <random>
 
 using namespace std;
 using namespace Eigen;
@@ -16,7 +17,18 @@ bool ballDetection::hasHitObject(Sai2Model::Sai2Model ball) {
 * Returns position of the ball with random normal noise to simulate position from camera
 */
 Vector3d ballDetection::getNoisyPosition(Vector3d posInWorld) {
+    Vector3d pos;
+    const double mean = 0.0;
+    const double stddev = 0.1;
 
+    std::default_random_engine generator;
+    std::normal_distribution<double> dist(mean, stddev);
+
+    for (i=0; i<3; i++) {
+        pos[i] = pos[i] + dist(generator);
+    }
+
+    return pos;
 }
 
 /*Kristina 
