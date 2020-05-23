@@ -366,24 +366,13 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     Vector3d endVel;
     endVel << initVel(0), initVel(1), -g*t_exit + initVel(2);
 
-//     double angle_from = atan2(initVel(0),initVel(1)); // * (180/M_PI); //
-//     double angle_to   = atan2(x_exit - targetPos(0), y_exit - targetPos(1)); // * (180/M_PI);
-//     double angle = (angle_to + angle_from)/2 + M_PI/2; // end effector angle XY
-//    Vector3d vecToTarget;
-//        vecToTarget << targetPos(0) - x_exit, targetPos(1) - y_exit, targetPos(2) - z_exit;
-//
-//    double d = pow(vecToTarget(0),2) + pow(vecToTarget(1),2) + pow(vecToTarget(2),2);
-//    double v0 = pow(endVel(0),2)+ pow(endVel(1),2) + pow(endVel(2),2);
-//
-//    double z_angle = (1/2)*asin(d*g/pow(v0,2));
 
-
-    double rot_angle = atan2(initVel(2), initVel(1));
+    double rot_angle = atan2(initVel(1), initVel(0)); // watch out for divide by zeros!
     
      // first rotation about z
     MatrixXd Rd1 = MatrixXd::Zero(3,3);
-    Rd1 << cos(rot_angle), -sin(rot_angle), 0,
-            sin(rot_angle),cos(rot_angle), 0,
+    Rd1 << cos(rot_angle), sin(rot_angle), 0,
+            -sin(rot_angle),cos(rot_angle), 0,
             0, 0, 1 ;
      
      // find new velocity vector in new frame
@@ -398,7 +387,7 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
                -sin(z_angle), 0, cos(z_angle) ;
      
      MatrixXd Rd = MatrixXd::Zero(3,3);
-     Rd = Rd1 * Rd2; // the order of this is important, might need to flip!
+     Rd = Rd2 * Rd1; // the order of this is important, might need to flip!
      
     return Rd;
 }
