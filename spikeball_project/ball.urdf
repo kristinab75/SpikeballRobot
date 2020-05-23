@@ -54,14 +54,14 @@
         <!-- <origin xyz="0 0 0" rpy="0 0 0" /> -->
         <geometry>
           <mesh filename="../../../model/spikeball/meshes/visual/ball-take3.obj"/>
-          <!-- <box size="0.0889 0.0889 0.0889" /> -->
+          <!-- <sphere radius="0.0889" /> -->
         </geometry>
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
           <!-- <mesh filename="../../../model/spikeball/meshes/collision/ball-take3.obj"/> -->
-          <box size="0.0889 0.0889 0.0889" />
+          <sphere radius="0.0889" />
         </geometry>
       </collision>
     </link>

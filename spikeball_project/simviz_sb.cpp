@@ -86,6 +86,12 @@ int main() {
 	auto object = new Sai2Model::Sai2Model(obj_file, false);
 	// object->_q(0) = 0.60;
 	// object->_q(1) = -0.35;
+	//object->_dq(0) = 1.0;
+	//object->_dq(1) = 1.0;
+	//object->_dq(2) = 0.0;
+	//object->_dq(3) = 0.0;
+	//object->_dq(4) = 0.0;
+	//object->_dq(5) = 0.0;
 	object->updateModel();
 
 	// load simulation world

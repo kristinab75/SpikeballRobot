@@ -36,9 +36,9 @@
 	<static_object name="Net">
 		<origin xyz="0.0 0 0" rpy="0 0 0" />
 		<collision>
-	        <origin xyz="0.0 0.0 0.2715" rpy="0 0 0" />
+	        <origin xyz="0.0 0.0 0.2032" rpy="0 0 0" />
 	        <geometry>
-	            <box size="1.515 1.0 0.2032" />
+	            <box size="1.0 1.0 0.01" />
 		</geometry>
 	    </collision>
 	    <visual>
