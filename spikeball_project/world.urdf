@@ -36,9 +36,9 @@
 	<static_object name="Net">
 		<origin xyz="0.0 0 0" rpy="0 0 0" />
 		<collision>
-	        <origin xyz="0.0 0.0 0.2032" rpy="0 0 0" />
+	        <origin xyz="0.0 0.0 0.17" rpy="0 0 0" />
 	        <geometry>
-	            <box size="1.0 1.0 0.01" />
+	            <box size="1.0 1.0 0.001" />
 		</geometry>
 	    </collision>
 	    <visual>
@@ -46,7 +46,7 @@
 	        <!-- <origin xyz="0.0 0.0 0.2715" rpy="0 0 0" /> -->
 	        <geometry>
 	            <mesh filename="./resources/../../../model/spikeball/meshes/visual/net-i-hope.obj" scale="1.0 1.0 1.0"/>
-	             <!-- <box size="1.515 1.0 0.2032" /> -->
+	             <!-- <box size="1.0 1.0 0.2032" /> -->
 	        </geometry>
 	    </visual>
 	</static_object>
@@ -62,7 +62,7 @@
 	</light>
 
 	<camera name="camera_fixed">
-		<position xyz="3.0 -3.0 1" />
+		<position xyz="3.0 -3.0 .2" />
 		<vertical xyz="0.0 0.0 1.0" />
 		<lookat xyz="0.0 0.0 0.3" />
 	</camera>
