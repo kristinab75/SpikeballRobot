@@ -22,7 +22,8 @@ const string world_file = "./resources/world.urdf";
 const string robot_file = "./resources/panda_spikeball.urdf";
 const string obj_file = "./resources/ball.urdf";
 const string robot_name = "panda_spikeball";
-const string obj_name = "ball"; 
+const string ball_name = "ball"; 
+const string obj_name = "ball";
 const string camera_name = "camera_fixed";
 
 RedisClient redis_client;
@@ -148,7 +149,12 @@ int main() {
 	redis_client.setEigenMatrixJSON(JOINT_ANGLES_KEY, robot->_q); 
 	redis_client.setEigenMatrixJSON(JOINT_VELOCITIES_KEY, robot->_dq); 
 	redis_client.setEigenMatrixJSON(OBJ_JOINT_ANGLES_KEY, object->_q); 
-	redis_client.setEigenMatrixJSON(OBJ_JOINT_VELOCITIES_KEY, object->_dq); 
+	redis_client.setEigenMatrixJSON(OBJ_JOINT_VELOCITIES_KEY, object->_dq);
+
+	redis_client.setEigenMatrixJSON(BALL_ANGLES_KEY, object->_q);
+        redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, object->_dq);
+        //redis_client.setEigenMatrixJSON(OBJ_JOINT_ANGLES_KEY, object->_q);
+        //redis_client.setEigenMatrixJSON(OBJ_JOINT_VELOCITIES_KEY, object->_dq);
 
 	// start simulation thread
 	thread sim_thread(simulation, robot, object, sim);
@@ -253,7 +259,9 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 	// prepare simulation
 	int dof = robot->dof();
 	VectorXd command_torques = VectorXd::Zero(dof);
+	VectorXd command_torques_ball = VectorXd::Zero(object->dof());
 	redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
+	redis_client.setEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY, command_torques_ball);
 
 	// create a timer
 	LoopTimer timer;
@@ -277,6 +285,9 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 		command_torques = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY);
 		sim->setJointTorques(robot_name, command_torques + g);
 
+		command_torques_ball = redis_client.getEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY);
+                sim->setJointTorques(obj_name, command_torques_ball + g); 
+
 		// integrate forward
 		double curr_time = timer.elapsedTime();
 		double loop_dt = curr_time - last_time; 
@@ -295,8 +306,8 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 		redis_client.setEigenMatrixJSON(JOINT_ANGLES_KEY, robot->_q);
 		redis_client.setEigenMatrixJSON(JOINT_VELOCITIES_KEY, robot->_dq);
 
-		redis_client.setEigenMatrixJSON(OBJ_JOINT_ANGLES_KEY, object->_q);
-		redis_client.setEigenMatrixJSON(OBJ_JOINT_VELOCITIES_KEY, object->_dq);
+		redis_client.setEigenMatrixJSON(BALL_ANGLES_KEY, object->_q);
+		redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, object->_dq);
 
 		//update last time
 		last_time = curr_time;

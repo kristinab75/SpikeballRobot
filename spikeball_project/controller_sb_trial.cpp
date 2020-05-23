@@ -88,8 +88,8 @@ int main() {
         const Vector3d pos_in_link = Vector3d(0, 0, 0.15);	//CHANGE THIS FOR OUR OWN END EFFECTOR
 	
 	//CHANGE THESSSSEEEEEEEEEE
-        const string link_name_ball = "link7";		//+++++++++
-        const Vector3d pos_in_link_ball = Vector3d(0, 0, 0.15);	//+++++++++
+        const string link_name_ball = "link6";		//+++++++++
+        const Vector3d pos_in_link_ball = Vector3d(0, 0, 0);	//+++++++++
 
 	
         VectorXd control_torques = VectorXd::Zero(dof);
