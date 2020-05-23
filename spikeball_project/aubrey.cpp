@@ -3,7 +3,7 @@
 #include <math.h>
 using namespace Eigen;
 
-Vector3d getPrediction(VectorXd initPos, VextorXd initVel, VectorXd targetPos, double r) {
+Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r) {
 
     double g = 9.81;
     
@@ -45,7 +45,7 @@ Vector3d getPrediction(VectorXd initPos, VextorXd initVel, VectorXd targetPos, d
                       
                       
                       
-Vector3d getOrientationPrediction(VectorXd initPos, VextorXd initVel, VectorXd targetPos, double r) {
+Vector3d getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r) {
 
     double g = 9.81;
 
