@@ -1,13 +1,27 @@
-#include "Sai2Model.h"
+#ifndef BALL_DET
+#define BALL_DET
+ 
+
+
+
+/*#include "Sai2Model.h"
 #include "redis/RedisClient.h"
 #include "timer/LoopTimer.h"
 
 #include <iostream>
-#include <string>
+#include <string>*/
 
 using namespace std;
 using namespace Eigen;
 
+namespace ballDetection{
+
+class ballDetection{
+public:
+
+//Constructor
+ballDetection();
+~ballDetection();
 
 /*Sam
  * Returns if the ball robot has hit an object by checking the forces on the ball
@@ -41,6 +55,7 @@ void moveRobot(VectorXd predEndPos);
 /*Aubrey
 * Returns the predicted end position of the ball given a position and velocity of the ball's trajectory
 */
-VectorXd getPredicition(VectorXd initPos, VectorXd initVel);
-
-
+Vector3d getPrediction(Vector3d initPos, Vector3d initVel, Vector3d targetPos, double r);
+};
+}
+#endif
