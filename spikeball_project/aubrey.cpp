@@ -87,16 +87,26 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     double d = pow(vecToTarget(0),2) + pow(vecToTarget(1),2) + pow(vecToTarget(2),2);
     double v0 = pow(endVel(0),2)+ pow(endVel(1),2) + pow(endVel(2),2);
 
-    double z_angle = (180*M_PI)* (1/2)*asin(d*g/pow(v0,2)git);
+    double z_angle = (1/2)*asin(d*g/pow(v0,2));
 
 
-//    Vector3d endEffAngles;
-//    endEffAngles << angle, angle, z_angle; // [deg]
+    double rot_angle = atan2(initVel(2), initVel(1));
+
     
-    MatrixXd Rd = MatrixXd::Zero(3,3);
-    Rd << cos(angle), -sin(angle), 0,
-            sin(angle),cos(angle), 0,
+     // first rotation about z
+    MatrixXd Rd1 = MatrixXd::Zero(3,3);
+    Rd1 << cos(rot_angle), -sin(rot_angle), 0,
+            sin(rot_angle),cos(rot_angle), 0,
             0, 0, 1 ;
+     
+     // second rotation about y'
+     MatrixXd Rd2 = MatrixXd::Zero(3,3);
+     Rd2 << cos(z_angle), 0, sin(z_angle),
+               0, 1, 0
+               -sin(z_angle), 0, cos(z_angle) ;
+     
+     MatrixXd Rd = Rd1 * Rd2; // the order of this is important, might need to flip!
+     
     
     return Rd;
 }
