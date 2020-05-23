@@ -84,8 +84,6 @@ int main() {
 
 	// load robot objects
 	auto object = new Sai2Model::Sai2Model(obj_file, false);
-	// object->_q(0) = 0.60;
-	// object->_q(1) = -0.35;
 	object->updateModel();
 
 	// load simulation world
