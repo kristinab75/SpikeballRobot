@@ -6,6 +6,7 @@
 #include <math.h>
 #include <iostream>
 #include <string>
+#include <cmath>
 
 using namespace std;
 using namespace Eigen;
@@ -383,8 +384,8 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
             0, 0, 1 ;
      
      // find new velocity vector in new frame
-     Vector3d vecInFrame0 = R0 * endVel;
-     double z_angle = atan2(vecInFrame2(2), vecInFrame2(0));
+     Vector3d vecInFrame = R0 * endVel;
+     double z_angle = atan2(vecInFrame(2), vecInFrame(0));
      
      double d = sqrt(pow((targetPos(0) - endPos(0)),2) + pow((targetPos(1) - endPos(1)),2)); // distance to target
      double h = endPos(2) - targetPos(2); // difference in height between end effector and target point
@@ -393,15 +394,15 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
      double theta = -M_PI/2;
      double d_calc = 0;
      
-     while abs(d-d_calc) > 0.1 {
+     while (abs(d-d_calc) > 0.1) {
          
          d_calc = (v0*cos(theta) * (v0*sin(theta) + sqrt( pow(v0*sin(theta),2) + 2*g*h)))/g;
          
          theta = theta + M_PI/(1*pow(10,7)); // increment up theta
          
-         if theta > M_PI/2 {
+         if (theta > M_PI/2) {
              std::cout << "Warning: Unable to reach target point!";
-             break
+             break;
          }
      }
      
