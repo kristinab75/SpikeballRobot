@@ -6,6 +6,7 @@
 #include <math.h>
 #include <iostream>
 #include <string>
+#include <cmath>
 
 using namespace std;
 using namespace Eigen;
@@ -353,41 +354,68 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     }
     
     double y_exit = initVel(1)*(x_exit - initPos(0))/(initVel(0)) + initPos(1);
-
     double t_exit = (x_exit - initPos(0)) / initVel(0);
-
     double z_exit = -(1/2)*g* pow(t_exit,2) + initVel(2)*t_exit + initPos(2);
 
+     
     Vector3d endPos;
     endPos << x_exit, y_exit, z_exit;
 
 
-    /// Velocity at Paddle
+    // Velocity at Paddle
     Vector3d endVel;
     endVel << initVel(0), initVel(1), -g*t_exit + initVel(2);
 
-
-    double rot_angle = atan2(initVel(1), initVel(0)); // watch out for divide by zeros!
+    Vector3d vecToTarget = endPos - targetPos;
+    double angle_in = atan2(initVel(1), initVel(0));
+    double angle_out = atan2(vecToTarget(1), vecToTarget(0));
+    double rot_angle = (angle_in + angle_out)/2;
     
-     // first rotation about z
-    MatrixXd Rd1 = MatrixXd::Zero(3,3);
-    Rd1 << cos(rot_angle), sin(rot_angle), 0,
-            -sin(rot_angle),cos(rot_angle), 0,
+      // rotation matrix for velocity -- Remember to Check Signs of SINs
+     MatrixXd R0 = MatrixXd::Zero(3,3);
+     R0 << cos(angle_in), sin(angle_in), 0,
+             -sin(angle_in),cos(angle_in), 0,
+             0, 0, 1 ;
+     
+     // first rotation about z -- Remember to Check Signs of SINs
+    MatrixXd R1 = MatrixXd::Zero(3,3);
+    R1 << cos(rot_angle), -sin(rot_angle), 0,
+            sin(rot_angle),cos(rot_angle), 0,
             0, 0, 1 ;
      
      // find new velocity vector in new frame
-     Vector3d vecInFrame2 = Rd1 * endVel;
+     Vector3d vecInFrame = R0 * endVel;
+     double z_angle = atan2(vecInFrame(2), vecInFrame(0));
      
-     double z_angle = atan2(vecInFrame2(2), vecInFrame2(0));
+     double d = sqrt(pow((targetPos(0) - endPos(0)),2) + pow((targetPos(1) - endPos(1)),2)); // distance to target
+     double h = endPos(2) - targetPos(2); // difference in height between end effector and target point
+     double v0 = sqrt(pow(endVel(0),2) + pow(endVel(1),2) + pow(endVel(2),2));
+     
+     double theta = -M_PI/2;
+     double d_calc = 0;
+     
+     while (abs(d-d_calc) > 0.1) {
+         
+         d_calc = (v0*cos(theta) * (v0*sin(theta) + sqrt( pow(v0*sin(theta),2) + 2*g*h)))/g;
+         
+         theta = theta + M_PI/(1*pow(10,7)); // increment up theta
+         
+         if (theta > M_PI/2) {
+             std::cout << "Warning: Unable to reach target point!";
+             break;
+         }
+     }
+     
+     double new_z_angle = (z_angle - theta)/2;
      
      // second rotation about y'
-     MatrixXd Rd2 = MatrixXd::Zero(3,3);
-     Rd2 << cos(z_angle), 0, sin(z_angle),
+     MatrixXd R2 = MatrixXd::Zero(3,3);
+     R2 << cos(new_z_angle), 0, -sin(new_z_angle),
                0, 1, 0,
-               -sin(z_angle), 0, cos(z_angle) ;
+               sin(new_z_angle), 0, cos(new_z_angle) ;
      
      MatrixXd Rd = MatrixXd::Zero(3,3);
-     Rd = Rd2 * Rd1; // the order of this is important, might need to flip!
+     Rd = R1 * R2; // the order of this is important, might need to flip!
      
     return Rd;
 }
