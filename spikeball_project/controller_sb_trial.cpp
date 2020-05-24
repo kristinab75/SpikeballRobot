@@ -131,7 +131,7 @@ int main() {
 
 	// Initialize ball velocity
 	VectorXd control_torques_ball = VectorXd::Zero(ball->dof());
-	control_torques_ball << -1, 1, 0,0,0,0;
+	control_torques_ball << -1, 1, 0.2,0,0,0;
 	redis_client.setEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY, control_torques_ball);
 
 while (runloop)
@@ -157,11 +157,14 @@ while (runloop)
 
 		robot->positionInWorld(x_world, link_name, pos_in_link);  //+++++++++
 
-		
+		//ball->position(x_ball, link_name_ball, pos_in_link_ball); 
                 ball->positionInWorld(x_ball, link_name_ball, pos_in_link_ball);	//+++++++++
                 ball->linearVelocityInWorld(x_vel_ball, link_name_ball, pos_in_link_ball);	//+++++++++
                 ball->angularVelocityInWorld(w_ball, link_name_ball);			//+++++++++
                 ball->rotationInWorld(R_ball, link_name_ball);			//+++++++++
+
+		x_ball[1] = x_ball[1] -1;
+		x_ball[2] = x_ball[2] + 1;
 
 		///////////////////////////////
 		// FINDING X DESIRED!!!!!
@@ -174,7 +177,7 @@ while (runloop)
 		} */
 
 		//Get noisy position
-		x_ball = getNoisyPosition(x_ball);	// can just comment this out for no noise
+		//x_ball = getNoisyPosition(x_ball);	// can just comment this out for no noise
 		
 		// Kalman Filter to get prediction of next position and velocity
 
@@ -184,10 +187,14 @@ while (runloop)
 		Vector3d targetPos;
 		targetPos << 0,0,0;
 		x_pred = getPrediction(x_ball, x_vel_ball, targetPos, r);
-		
+
+		cout << "PRED: x: " << x_pred[0] << ", y: " << x_pred[1] << ", z: " << x_pred[2] << "\n";
+		cout << "BALL: x: " << x_ball[0] << ", y: " << x_ball[1] << ", z: " << x_ball[2] << "\n";
+		cout << "\n";
 		// Find what robot's joint space its in
 		//int robot_des = getRobot(x_pred);
 
+		// REACHABLE SPACE
 		//temp fix for one robot
 		int robot_des = 0;
 		if (abs(x_ball[0] - x_world[0]) + abs(x_ball[1] - x_world[1]) < 0.5) {
