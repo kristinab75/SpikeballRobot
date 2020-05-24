@@ -111,7 +111,7 @@ int main() {
 
     // set co-efficient of restition to zero for force control
     // see issue: https://github.com/manips-sai/sai2-simulation/issues/1
-    sim->setCollisionRestitution(0.3);
+    sim->setCollisionRestitution(1.0);
 
     // set co-efficient of friction also to zero for now as this causes jitter
     // sim->setCoeffFrictionStatic(0.0);
@@ -319,6 +319,14 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 		command_torques_ball = redis_client.getEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY);
                 sim->setJointTorques(obj_name, command_torques_ball); 
 
+//		ui_force_widget->getUIForce(ui_force);
+//		ui_force_widget->getUIJointTorques(ui_force_command_torques);
+
+//		if (fRobotLinkSelect)
+//			sim->setJointTorques(robot_name, command_torques + ui_force_command_torques - robot->_M*kvj*robot->_dq + g);
+//		else
+//			sim->setJointTorques(robot_name, command_torques - robot->_M*kvj*robot->_dq + g);  // can comment out the joint damping if controller does this 
+
 		// integrate forward
 		double curr_time = timer.elapsedTime() / time_slowdown_factor;
 		double loop_dt = curr_time - last_time; 
@@ -333,12 +341,45 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 		sim->getJointVelocities(obj_name, object->_dq);
 		object->updateModel();
 
+		object->positionInWorld(obj_pos, "link6");
+		robot->positionInWorld(camera_pos, "link7");
+		robot->rotationInWorld(camera_ori, "link7");  // local to world frame 
+
+		// add position offset in world.urdf file since positionInWorld() doesn't account for this 
+//		obj_pos += obj_offset;
+//		camera_pos += robot_offset;  // camera position/orientation is set to the panda's last link
+
 		// write new robot state to redis
 		redis_client.setEigenMatrixJSON(JOINT_ANGLES_KEY, robot->_q);
 		redis_client.setEigenMatrixJSON(JOINT_VELOCITIES_KEY, robot->_dq);
 
 		redis_client.setEigenMatrixJSON(BALL_ANGLES_KEY, object->_q);
 		redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, object->_dq);
+
+		// object camera detect 
+//		detect = cameraFOV(obj_pos, camera_pos, camera_ori, 1.0, M_PI/6);
+//		if (detect == true) {
+//			obj_pos(0) += dist(generator);  // add white noise 
+//			obj_pos(1) += dist(generator);
+//			obj_pos(2) += dist(generator);
+//			redis_data.at(0) = std::pair<string, string>(CAMERA_DETECT_KEY, true_message);
+//			redis_data.at(1) = std::pair<string, string>(CAMERA_OBJ_POS_KEY, redis_client.encodeEigenMatrixJSON(obj_pos));
+//		}
+//		else {
+//			redis_data.at(0) = std::pair<string, string>(CAMERA_DETECT_KEY, false_message);
+//			redis_data.at(1) = std::pair<string, string>(CAMERA_OBJ_POS_KEY, redis_client.encodeEigenMatrixJSON(Vector3d::Zero()));
+//		}
+
+		// publish all redis keys at once to reduce multiple redis calls that slow down simulation 
+		// shown explicitly here, but you can define a helper function to publish data 
+//		redis_data.at(2) = std::pair<string, string>(JOINT_ANGLES_KEY, redis_client.encodeEigenMatrixJSON(robot->_q));
+//		redis_data.at(3) = std::pair<string, string>(JOINT_VELOCITIES_KEY, redis_client.encodeEigenMatrixJSON(robot->_dq));
+//		redis_data.at(4) = std::pair<string, string>(OBJ_JOINT_ANGLES_KEY, redis_client.encodeEigenMatrixJSON(object->_q));
+//		redis_data.at(5) = std::pair<string, string>(OBJ_JOINT_VELOCITIES_KEY, redis_client.encodeEigenMatrixJSON(object->_dq));
+//		redis_data.at(6) = std::pair<string, string>(CAMERA_POS_KEY, redis_client.encodeEigenMatrixJSON(camera_pos));
+//		redis_data.at(7) = std::pair<string, string>(CAMERA_ORI_KEY, redis_client.encodeEigenMatrixJSON(camera_ori));
+
+//		redis_client.pipeset(redis_data);
 
 		//update last time
 		last_time = curr_time;

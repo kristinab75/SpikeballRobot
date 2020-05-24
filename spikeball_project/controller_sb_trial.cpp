@@ -247,7 +247,8 @@ while (runloop)
 
                 VectorXd F(6);
                 F = Lambda0 * pd;
-                control_torques = J.transpose() * F + N.transpose() * ( Gamma_damp ) + 0*g;  // gravity is compensated in simviz loop as of now
+		control_torques.setZero();
+//                control_torques = J.transpose() * F + N.transpose() * ( Gamma_damp ) + 0*g;  // gravity is compensated in simviz loop as of now
 
   // send torques to redis
                 redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
