@@ -1,6 +1,6 @@
 // example visulaization program
 
-//#include <GL/glew.h>
+#include <GL/glew.h>
 #include "Sai2Model.h"
 #include "Sai2Graphics.h"
 #include "Sai2Simulation.h"
@@ -9,6 +9,9 @@
 #include "timer/LoopTimer.h"
 
 #include <GLFW/glfw3.h> //must be loaded after loading opengl/glew
+
+#include "uiforce/UIForceWidget.h"
+#include <random>
 
 #include <signal.h>
 bool fSimulationRunning = false;
@@ -58,6 +61,12 @@ void keySelect(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 // callback when a mouse button is pressed
 void mouseClick(GLFWwindow* window, int button, int action, int mods);
+
+// callback boolean check for objects in camera FOV
+bool cameraFOV(Vector3d object_pos, Vector3d camera_pos, Matrix3d camera_ori, double radius, double fov_angle);
+
+// helper function for cameraFOV
+bool compareSigns(double a, double b);
 
 // flags for scene camera movement
 bool fTransXp = false;
@@ -142,7 +151,7 @@ int main() {
 	glfwSetMouseButtonCallback(window, mouseClick);
 
 	// initialize glew
-	//glewInitialize();
+	glewInitialize();
 
 	// cache variables
 	double last_cursorx, last_cursory;
@@ -267,13 +276,34 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 	// create a timer
 	LoopTimer timer;
 	timer.initializeTimer();
-	timer.setLoopFrequency(1000); 
+	timer.setLoopFrequency(1000); 	
+	double time_slowdown_factor = 2.0;  // adjust to higher value (i.e. 2) to slow down simulation by this factor relative to real time (for slower machines)
 	bool fTimerDidSleep = true;
-	double start_time = timer.elapsedTime(); //secs
+	double start_time = timer.elapsedTime() / time_slowdown_factor; // secs
 	double last_time = start_time;
 
 	// init variables
 	VectorXd g(dof);
+	Eigen::Vector3d ui_force;
+	ui_force.setZero();
+	Eigen::VectorXd ui_force_command_torques;
+	ui_force_command_torques.setZero();
+
+	// init camera detection variables 
+	Vector3d camera_pos, obj_pos;
+	Matrix3d camera_ori;
+	bool detect;
+	const std::string true_message = "Detected";
+	const std::string false_message = "Not Detected";
+
+	// setup redis client data container for pipeset (batch write)
+	std::vector<std::pair<std::string, std::string>> redis_data(8);  // set with the number of keys to write 
+
+	// setup white noise generator
+    const double mean = 0.0;
+    const double stddev = 0.001;  // tune based on your system 
+    std::default_random_engine generator;
+    std::normal_distribution<double> dist(mean, stddev);
 
 	fSimulationRunning = true;
 	while (fSimulationRunning) {
@@ -290,7 +320,7 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
                 sim->setJointTorques(obj_name, command_torques_ball); 
 
 		// integrate forward
-		double curr_time = timer.elapsedTime();
+		double curr_time = timer.elapsedTime() / time_slowdown_factor;
 		double loop_dt = curr_time - last_time; 
 		sim->integrate(loop_dt);
 
