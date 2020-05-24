@@ -190,13 +190,14 @@ while (runloop)
 
 		//temp fix for one robot
 		int robot_des = 0;
-		if (x_pred[0] < x_world[0] - .5) {
+		if (abs(x_ball[0] - x_world[0]) + abs(x_ball[1] - x_world[1]) < 0.5) {
+		//if (x_pred[0] < abs(x_world[0] - .5) && x_pred[1] < abs(x_world[1] - .5)) {
 			robot_des = 1;
 		}
 
 		// Change x_des depending on which robot will hit it
 		if (robot_des == 1) {
-			x_des = x_pred;
+			x_des = x_ball;
 		} else if  (robot_des == 2) {
 
 		} else if  (robot_des == 3) {
@@ -207,7 +208,8 @@ while (runloop)
 			x_des = x;
 		}
 		
-		
+		//x_des << 
+			
 		
 		/////////////////////////////////
 
@@ -233,6 +235,10 @@ while (runloop)
                 // Gamma_mid = - (kmid * (2 * robot->_q - (q_high + q_low)));
                 Gamma_damp = - (kdamp * robot->_dq);
 
+		 Rd << 0.696707, -0.717356, -7.0252e-12,
+                -0.717356, -0.696707, -6.82297e-12,
+                 0, 9.79318e-12, -1;
+
                 Vector3d delta_phi;
                 delta_phi = -0.5 * (R.col(0).cross(Rd.col(0)) + R.col(1).cross(Rd.col(1)) + R.col(2).cross(Rd.col(2)));
 
@@ -247,11 +253,15 @@ while (runloop)
 
                 VectorXd F(6);
                 F = Lambda0 * pd;
-		control_torques.setZero();
-//                control_torques = J.transpose() * F + N.transpose() * ( Gamma_damp ) + 0*g;  // gravity is compensated in simviz loop as of now
+		//cout << pd << "\n";
+		//control_torques.setZero();
+               control_torques = J.transpose() * F + N.transpose() * ( Gamma_damp ) + 0*g;  // gravity is compensated in simviz loop as of now
 
   // send torques to redis
                 redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
+
+		//calc std of moving buffer of 1 --> std stays same if no spike
+		// threshold spike
 
                 counter++;
         }
