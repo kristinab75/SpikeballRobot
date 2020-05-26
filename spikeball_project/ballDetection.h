@@ -33,6 +33,11 @@ bool hasHitObject(Sai2Model::Sai2Model ball);
 * Returns position of the ball with random normal noise to simulate position from camera
 */
 Vector3d getNoisyPosition(Vector3d posInWorld);
+    
+/*Sam
+ * Takes in predicted end position and selects which robot to move. 
+ */
+int getRobot(Vector3d endPos);
 
 
 /*Kristina
