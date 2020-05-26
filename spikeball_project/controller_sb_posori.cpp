@@ -145,27 +145,9 @@ int main() {
 		control_torques[i] = VectorXd::Zero(dof);
 	}
 	
-        // model quantities for operational space control
-        /*MatrixXd Jv = MatrixXd::Zero(3,dof);
-        MatrixXd Lambda = MatrixXd::Zero(3,3);
-        MatrixXd J_bar = MatrixXd::Zero(dof,3);
-        MatrixXd N = MatrixXd::Zero(dof,dof);
-
-        robot->Jv(Jv, link_name, pos_in_link);
-        robot->taskInertiaMatrix(Lambda, Jv);
-        robot->dynConsistentInverseJacobian(J_bar, Jv);
-        robot->nullspaceMatrix(N, Jv);
-
-        VectorXd F(6), g(dof), b(dof), joint_task_torque(dof), Gamma_damp(dof), Gamma_mid(dof);;
-        VectorXd q_high(dof), q_low(dof);
-        Vector3d x, x_vel, p, w, x_des, x_pred;
-	Vector3d x_ball, x_vel_ball, p_ball, w_ball, x_world; 	 //+++++++++
-        Vector3d dxd, ddxd;
-        Matrix3d R, Rd;
-	Matrix3d R_ball;*/
 	Vector3d x_ball, x_vel_ball;
 	VectorXd xs[4], xs_des[4];
-	Matrix3d Rs_des[4];
+	Matrix3d Rs[4], Rs_des[4];
 
 
 
@@ -196,6 +178,7 @@ while (runloop)
                 	robots[i]->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[i]);
 			robots[i]->updateModel();
 			robots[i]->position(xs[i], link_name, pos_in_link);
+			robots[i]->rotation(Rs[i], link_name);
 		}
 		ball->_q =  redis_client.getEigenMatrixJSON(BALL_ANGLES_KEY);		 //+++++++++
 		ball->_dq = redis_client.getEigenMatrixJSON(BALL_VELOCITIES_KEY);	 //+++++++++
@@ -207,8 +190,6 @@ while (runloop)
 		//Ball
                 ball->positionInWorld(x_ball, link_name_ball, pos_in_link_ball);	//+++++++++
                 ball->linearVelocityInWorld(x_vel_ball, link_name_ball, pos_in_link_ball);	//+++++++++
-                //ball->angularVelocityInWorld(w_ball, link_name_ball);			//+++++++++
-                //ball->rotationInWorld(R_ball, link_name_ball);			//+++++++++
 
 		x_ball[1] = x_ball[1] -1;
 		x_ball[2] = x_ball[2] + 1;
@@ -238,8 +219,13 @@ while (runloop)
 		int robot_des = getRobot(x_pred);
 
 		for (int i = 0; i < 4; i++) {
-			if (robot_des - 1 == i) xs_des[i] = x_pred;
-			else xs_des[i] = xs[i];
+			if (robot_des - 1 == i){
+				xs_des[i] = x_pred;
+				Rs_des[i] = r_pred;
+			} else {
+				xs_des[i] = xs[i];
+				Rs_des[i] = Rs[i];
+			}
 		}
 
 		
@@ -263,8 +249,10 @@ while (runloop)
 		}
         }
 
-        control_torques.setZero();
-        redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
+	for (int i = 0; i < 4; i++) {
+        	control_torques[i].setZero();
+ 	       	redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[i], control_torques[i]);
+	}
 
         double end_time = timer.elapsedTime();
     std::cout << "\n";
