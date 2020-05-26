@@ -150,10 +150,10 @@
         </geometry>
       </visual>
       <collision>
-	<!--<origin xyz ="0 0 .05" rpy="0 0 0" />
+	<origin xyz ="0 0 .05" rpy="0 0 0" />
         <geometry>
           <box size="0.5 0.01 0.1"/>
-        </geometry>-->
+        </geometry>
       </collision>
     </link>
     <joint name="joint1" type="revolute">
@@ -216,13 +216,13 @@
       <axis xyz="0 0 1"/>
       <limit effort="12" lower="-2.8973" upper="2.8973" velocity="2.6100"/>
     </joint>
-    <joint name="plate_joint" type="prismatic">
+    <joint name="plate_joint" type="fixed">
       <parent link="link7"/>
       <child link="plate"/>
       <origin xyz="0 0 0.1654" rpy="0 0 -0.78539816339"/>
       <axis xyz="0 0 1"/>
-      <calibration rising="-0.02" />
-      <limit effort="2000" lower="0.0" upper="0.1" velocity="0.1"/>
+      <!--<calibration rising="-0.02" />
+      <limit effort="2000" lower="0.0" upper="0.1" velocity="0.1"/>-->
       <!-- <mimic joint="finger_joint1" /> -->
     </joint>
 </robot>

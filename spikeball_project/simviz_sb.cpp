@@ -102,7 +102,6 @@ int main() {
 	auto robot = new Sai2Model::Sai2Model(robot_file, false);
 	robot->_q(0) = -0.8;
 	robot->updateModel();
-	robot->updateKinematics();
 
 	// load robot objects
 	auto object = new Sai2Model::Sai2Model(obj_file, false);
