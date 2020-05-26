@@ -52,6 +52,7 @@ const std::string NET_JOINT_VELOCITIES_KEY = "cs225a::object::Net::sensors::dq";
 // - write:
 const std::string JOINT_TORQUES_COMMANDED_KEY  = "cs225a::robot::panda::actuators::fgc";
 const std::string BALL_TORQUES_COMMANDED_KEY  = "cs225a::robot::ball::actuators::fgc";  //+++++++++
+const std:sstring FIRST_LOOP_KEY = "cs225a::robot::ball::initvel";
 
 int main() {
 
@@ -143,9 +144,10 @@ while (runloop)
                 fTimerDidSleep = timer.waitForNextLoop();
 
 		if (counter == 0) {
-			VectorXd ball_init_vel(6);
-			ball_init_vel << 0.0,0,0,0.0,0.0,1.0;
-			redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, ball_init_vel);
+			redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY);
+			ball->_dq(0) = 0;
+			ball->_dq(1) = 1;
+			ball->_dq(2) = -1;
 			ball->updateModel();
 		}
 
