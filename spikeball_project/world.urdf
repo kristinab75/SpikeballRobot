@@ -65,9 +65,9 @@
 	</light>
 
 	<camera name="camera_fixed">
-		<position xyz="3.0 0.0 1.0" />
+		<position xyz="0.01 0.01 4.0" />
 		<vertical xyz="0.0 0.0 1.0" />
-		<lookat xyz="0.0 0.0 0.3" />
+		<lookat xyz="0.0 0.0 0.3." />
 	</camera>
 
 </world>
