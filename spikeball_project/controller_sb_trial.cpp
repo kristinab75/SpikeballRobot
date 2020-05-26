@@ -130,13 +130,24 @@ int main() {
         runloop = true;
 
 	// Initialize ball velocity
-	VectorXd control_torques_ball = VectorXd::Zero(ball->dof());
+	/*VectorXd control_torques_ball = VectorXd::Zero(ball->dof());
 	control_torques_ball << -1, 1, 0.2,0,0,0;
-	redis_client.setEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY, control_torques_ball);
+	redis_client.setEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY, control_torques_ball);*/
+	
+	/*ball->_dq << 0, 1, -1, 0, 0, 0;
+	ball->updateModel();
+	redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, ball->_dq);*/
 
 while (runloop)
         {
                 fTimerDidSleep = timer.waitForNextLoop();
+
+		if (counter == 0) {
+			VectorXd ball_init_vel(6);
+			ball_init_vel << 0.0,0,0,0.0,0.0,1.0;
+			redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, ball_init_vel);
+			ball->updateModel();
+		}
 
                 // read robot state from redis
                 robot->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEY);
@@ -261,9 +272,8 @@ while (runloop)
                 VectorXd F(6);
                 F = Lambda0 * pd;
 		//cout << pd << "\n";
-		//control_torques.setZero();
-               control_torques = J.transpose() * F + N.transpose() * ( Gamma_damp ) + 0*g;  // gravity is compensated in simviz loop as of now
-
+		control_torques.setZero();
+               //control_torques = J.transpose() * F + N.transpose() * ( Gamma_damp ) + 0*g;  // gravity is compensated in simviz loop as of now
   // send torques to redis
                 redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
 
