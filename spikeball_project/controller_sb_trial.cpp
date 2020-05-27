@@ -332,15 +332,18 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     double g = 9.81;
     int numRobots = 4;
     int robotHit = -1;
+    double x1 = 0;
+    double y1 = 0;
     
     for (int i = 0; i < numRobots; i++) {
         
         if (initVel(0) == 0) {
             std::cout << "Warning: Zero X Velocity caused divide by Zero";
-        } else {
-            double M = initVel(1)/initVel(0); // XY slope of trajectory
-            double B = initPos(1) - initPos(0)*M; // Y intercept
+            continue;
         }
+        
+        double M = initVel(1)/initVel(0); // XY slope of trajectory
+        double B = initPos(1) - initPos(0)*M; // Y intercept
         
         double a = centerPos(i,0);
         double b = centerPos(i,1);
@@ -366,12 +369,14 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
         double dist1 = pow( (x1_1 - initPos(0)) ,2) + pow(((M*x1_1 + B) - initPos(1)) ,2);
         double dist2 = pow( (x1_2 - initPos(0)) ,2) + pow(((M*x1_2 + B) - initPos(1)) ,2);
         
+      
+        
         if (dist1 < dist2) {
-            double x1 = x1_1;
-            double y1 = M*(x1_1) + B;
+            x1 = x1_1;
+            y1 = M*(x1_1) + B;
         } else {
-            double x1 = x1_2;
-            double y1 = M*(x1_2) + B;
+            x1 = x1_2;
+            y1 = M*(x1_2) + B;
         }
         
         robotHit = i;
@@ -397,6 +402,7 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
 
  MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, VectorXd endPos) {
 
+     double g = 9.81;
      double t1 = (endPos(0) - initPos(0)) /  ( initVel(0));
      
      Vector3d endVel;
@@ -440,7 +446,7 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
           }
       }
       
-      double new_z_angle = (z_angle - theta)/2;
+      double new_z_angle = (z_angle_in - theta)/2;
       
       // second rotation about y'
       MatrixXd R2 = MatrixXd::Zero(3,3);
