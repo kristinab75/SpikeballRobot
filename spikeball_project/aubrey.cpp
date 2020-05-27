@@ -11,7 +11,7 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     
     double g = 9.81;
     int numRobots = 4;
-    int robotHit = 0;
+    int robotHit = -1;
     
     for (int i = 0; i < numRobots; i++) {
         
@@ -59,7 +59,7 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     
     
     Vector3d endPos;
-    if (robotHit == 0) {
+    if (robotHit == -1) {
         std::cout << "Warning: No robots intersect this trajectory";
         endPos << 0,0,0;
         return endPos;
@@ -75,79 +75,62 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
 
 
 
+ MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, VectorXd endPos) {
 
-
-
- MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r) {
-
-    double g = 9.81;
-
-    double x_sol_1 = -((pow(initVel(1),2) * -initPos(0) + initVel(1)*initVel(0)*initPos(1)) + sqrt( pow(initVel(0),2) * (pow(r,2) *(pow(initVel(1),2) + pow(initVel(0),2)) - (initVel(1)*initPos(0) - initVel(0)* pow(initPos(1),2)))))  /   (pow(initVel(1),2) + pow(initVel(0),2));
-    
-    double x_sol_2 = ((pow(initVel(1),2) * initPos(0) - initVel(1)*initVel(0)*initPos(1)) + sqrt( pow(initVel(0),2) * (pow(r,2) *(pow(initVel(1),2) + pow(initVel(0),2)) - (initVel(1)*initPos(0) - initVel(0)* pow(initPos(1),2)))))   /   (pow(initVel(1),2) + pow(initVel(0),2));
-
-    double x_exit;
-
-    if (initVel(0) > 0){
-        if (x_sol_1 - initPos(0) > 0) {
-            x_exit = x_sol_1;
-        } else {
-            x_exit = x_sol_2;
-        }
-    } else {
-        if (x_sol_1 - initPos(0) < 0) {
-            x_exit = x_sol_1;
-        } else {
-            x_exit = x_sol_2;
-        }
-    }
-    
-    double y_exit = initVel(1)*(x_exit - initPos(0))/(initVel(0)) + initPos(1);
-
-    double t_exit = (x_exit - initPos(0)) / initVel(0);
-
-    double z_exit = -(1/2)*g* pow(t_exit,2) + initVel(2)*t_exit + initPos(2);
-
-    Vector3d endPos;
-    endPos << x_exit, y_exit, z_exit;
-
-
-    /// Velocity at Paddle
-    Vector3d endVel;
-    endVel << initVel(0), initVel(1), -g*t_exit + initVel(2);
-
-//     double angle_from = atan2(initVel(0),initVel(1)); // * (180/M_PI); //
-//     double angle_to   = atan2(x_exit - targetPos(0), y_exit - targetPos(1)); // * (180/M_PI);
-//     double angle = (angle_to + angle_from)/2 + M_PI/2; // end effector angle XY
-//    Vector3d vecToTarget;
-//        vecToTarget << targetPos(0) - x_exit, targetPos(1) - y_exit, targetPos(2) - z_exit;
-//
-//    double d = pow(vecToTarget(0),2) + pow(vecToTarget(1),2) + pow(vecToTarget(2),2);
-//    double v0 = pow(endVel(0),2)+ pow(endVel(1),2) + pow(endVel(2),2);
-//
-//    double z_angle = (1/2)*asin(d*g/pow(v0,2));
-
-
-    double rot_angle = atan2(initVel(2), initVel(1));
-    
-     // first rotation about z
-    MatrixXd Rd1 = MatrixXd::Zero(3,3);
-    Rd1 << cos(rot_angle), -sin(rot_angle), 0,
-            sin(rot_angle),cos(rot_angle), 0,
-            0, 0, 1 ;
+     double t1 = (endPos(0) - initPos(0)) /  ( initVel(0));
      
-     // find new velocity vector in new frame
-     Vector3d vecInFrame2 = Rd1 * endVel;
+     Vector3d endVel;
+     endVel << initVel(0), initVel(1), -g*t1 + initVel(2);
      
-     double z_angle = atan2(vecInFrame2(2), vecInFrame2(0));
+     double angle_in = atan2(initVel(1), initVel(0));
+     Vector3d vecToTarget = endPos - targetPos;
+     double angle_out = atan2(vecToTarget(1), vecToTarget(0));
+     double rot_angle = (angle_in + angle_out)/2;
      
-     // second rotation about y'
-     MatrixXd Rd2 = MatrixXd::Zero(3,3);
-     Rd2 << cos(z_angle), 0, sin(z_angle),
-               0, 1, 0
-               -sin(z_angle), 0, cos(z_angle) ;
+     MatrixXd R0 = MatrixXd::Zero(3,3);
+     R0 << cos(angle_in), sin(angle_in), 0,
+          -sin(angle_in), cos(angle_in), 0,
+           0            , 0            , 1;
      
-     MatrixXd Rd = Rd1 * Rd2; // the order of this is important, might need to flip!
+     MatrixXd R1 = MatrixXd::Zero(3,3);
+     R1 << cos(rot_angle), -sin(rot_angle), 0,
+           sin(rot_angle),  cos(rot_angle), 0,
+           0             ,  0             , 1;
      
-    return Rd;
+     Vector3d endVel_prime = R0 * endVel; // check matrix dimensions
+     double z_angle_in = atan2(endVel_prime(2), endVel_prime(0));
+     
+     double d = sqrt( pow((targetPos(0) - endPos(0)),2) + pow((targetPos(1) - endPos(1)),2)  );
+     double h = endPos(2) - targetPos(2);
+     double v0 = sqrt( pow(endVel(0),2) + pow(endVel(1),2) + pow(endVel(2),2) );
+     
+     double theta = -M_PI/2;
+     double d_calc = 0;
+     
+     
+     while (abs(d-d_calc) > 0.1) {
+          
+          d_calc = (v0*cos(theta) * (v0*sin(theta) + sqrt( pow(v0*sin(theta),2) + 2*g*h)))/g;
+          
+          theta = theta + M_PI/(1*pow(10,7)); // increment up theta
+          
+          if (theta > M_PI/2) {
+              std::cout << "Warning: Unable to reach target point!";
+              break;
+          }
+      }
+      
+      double new_z_angle = (z_angle - theta)/2;
+      
+      // second rotation about y'
+      MatrixXd R2 = MatrixXd::Zero(3,3);
+      R2 << cos(new_z_angle), 0, -sin(new_z_angle),
+            0               , 1, 0,
+            sin(new_z_angle), 0, cos(new_z_angle) ;
+      
+      MatrixXd Rd = MatrixXd::Zero(3,3);
+      Rd = R1 * R2;
+     
+      return Rd;
+     
 }
