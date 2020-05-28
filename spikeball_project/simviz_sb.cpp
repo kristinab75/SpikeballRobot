@@ -313,13 +313,15 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 	VectorXd firstLoop(6);
 	firstLoop << 0,0,0,0,0,0;
 
+	bool haveDone = false;
+
 	fSimulationRunning = true;
 	while (fSimulationRunning) {
 		fTimerDidSleep = timer.waitForNextLoop();
 
 		// Set up initial velocity of ball
 		firstLoop = redis_client.getEigenMatrixJSON(FIRST_LOOP_KEY);
-		if (firstLoop(0) == 1) {
+		if (firstLoop(0) == 1 && !haveDone) {
 			object->_dq(0) = -2;
 			object->_dq(1) = 4;
 			object->_dq(2) = 0.1;
@@ -330,6 +332,7 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 			cout << "velocity updated" << endl;
 			sim->setJointPositions(obj_name, object->_q);
 			sim->setJointVelocities(obj_name, object->_dq);
+			haveDone = true;
 			//redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, object->_dq);
 		}
 
