@@ -27,7 +27,7 @@ double sat(double x) {
 
 // ball detection functions
 Vector3d getNoisyPosition(Vector3d posInWorld);
-Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r);
+Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos);
 MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r);
 
 #define RAD(deg) ((double)(deg) * M_PI / 180.0)
@@ -52,7 +52,7 @@ const std::string NET_JOINT_VELOCITIES_KEY = "cs225a::object::Net::sensors::dq";
 // - write:
 const std::string JOINT_TORQUES_COMMANDED_KEY  = "cs225a::robot::panda::actuators::fgc";
 const std::string BALL_TORQUES_COMMANDED_KEY  = "cs225a::robot::ball::actuators::fgc";  //+++++++++
-const std:sstring FIRST_LOOP_KEY = "cs225a::robot::ball::initvel";
+const std::string FIRST_LOOP_KEY = "cs225a::robot::ball::initvel";
 
 int main() {
 
@@ -144,7 +144,7 @@ while (runloop)
                 fTimerDidSleep = timer.waitForNextLoop();
 
 		if (counter == 0) {
-			redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY);
+			redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, ball->_dq);
 			ball->_dq(0) = 0;
 			ball->_dq(1) = 1;
 			ball->_dq(2) = -1;
@@ -194,12 +194,17 @@ while (runloop)
 		
 		// Kalman Filter to get prediction of next position and velocity
 
+		MatrixXd centerPos(4,3);
+		centerPos << 	0, 1.3, 0,
+				1.3, 0, 0,
+				0, -1.3, 0,
+				-1.3, 0, 0;
 
 		// Find end effector position
 		double r = 1.3;
 		Vector3d targetPos;
 		targetPos << 0,0,0;
-		x_pred = getPrediction(x_ball, x_vel_ball, targetPos, r);
+		x_pred = getPrediction(x_ball, x_vel_ball, targetPos, r, centerPos);
 
 		cout << "PRED: x: " << x_pred[0] << ", y: " << x_pred[1] << ", z: " << x_pred[2] << "\n";
 		cout << "BALL: x: " << x_ball[0] << ", y: " << x_ball[1] << ", z: " << x_ball[2] << "\n";
