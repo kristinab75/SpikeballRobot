@@ -13,9 +13,6 @@
 #include "uiforce/UIForceWidget.h"
 #include <random>
 
-#include <iostream>
-#include <string>
-
 #include <signal.h>
 bool fSimulationRunning = false;
 void sighandler(int){fSimulationRunning = false;}
@@ -49,6 +46,7 @@ const std::string NET_JOINT_VELOCITIES_KEY = "cs225a::object::Net::sensors::dq";
 // - read:
 const std::string JOINT_TORQUES_COMMANDED_KEY  = "cs225a::robot::panda::actuators::fgc";
 const std::string BALL_TORQUES_COMMANDED_KEY  = "cs225a::robot::ball::actuators::fgc";  //+++++++++
+const std::string FIRST_LOOP_KEY = "cs225a::robot::ball::initvel";
 
 // simulation thread
 void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim);
@@ -79,7 +77,6 @@ bool fTransYn = false;
 bool fTransZp = false;
 bool fTransZn = false;
 bool fRotPanTilt = false;
-bool fRobotLinkSelect = false;
 
 int main() {
 	cout << "Loading URDF world model file: " << world_file << endl;
@@ -118,10 +115,10 @@ int main() {
     sim->setCollisionRestitution(1.0);
 
     // set co-efficient of friction also to zero for now as this causes jitter
-    // sim->setCoeffFrictionStatic(0.0);
-    // sim->setCoeffFrictionDynamic(0.0);
-    sim->setCoeffFrictionStatic(0.5);
-    sim->setCoeffFrictionDynamic(0.5);
+     sim->setCoeffFrictionStatic(0.0);
+     sim->setCoeffFrictionDynamic(0.0);
+    //sim->setCoeffFrictionStatic(0.5);
+    //sim->setCoeffFrictionDynamic(0.5);
 
 	/*------- Set up visualization -------*/
 	// set up error callback
@@ -156,10 +153,6 @@ int main() {
 
 	// initialize glew
 	glewInitialize();
-
-	// init click force widget 
-	auto ui_force_widget = new UIForceWidget(robot_name, robot, graphics);
-	ui_force_widget->setEnable(false);
 
 	// cache variables
 	double last_cursorx, last_cursory;
@@ -255,7 +248,6 @@ int main() {
 		}
 		graphics->setCameraPose(camera_name, camera_pos, cam_up_axis, camera_lookat);
 		glfwGetCursorPos(window, &last_cursorx, &last_cursory);
-
 	}
 
 	// wait for simulation to finish
@@ -281,6 +273,10 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 	VectorXd command_torques_ball = VectorXd::Zero(object->dof());
 	redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
 	redis_client.setEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY, command_torques_ball);
+
+	VectorXd initVel(6);
+        initVel << 0,0,0,0,0,0;
+	redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
 
 	// create a timer
 	LoopTimer timer;
@@ -314,16 +310,34 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
     std::default_random_engine generator;
     std::normal_distribution<double> dist(mean, stddev);
 
+	VectorXd firstLoop(6);
+
 	fSimulationRunning = true;
 	while (fSimulationRunning) {
 		fTimerDidSleep = timer.waitForNextLoop();
+
+		// Set up initial velocity of ball
+		firstLoop = redis_client.getEigenMatrixJSON(FIRST_LOOP_KEY);
+		if (firstLoop(0) == 1) {
+			object->_dq(0) = -1;
+			object->_dq(1) = 2;
+			object->_dq(2) = 0;
+			object->_q(0) = 0;
+			object->_q(1) = 0;
+			object->_q(2) = 0;
+			object->updateModel();
+			cout << "velocity updated" << endl;
+			sim->setJointPositions(obj_name, object->_q);
+			sim->setJointVelocities(obj_name, object->_dq);
+			//redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, object->_dq);
+		}
 
 		// get gravity torques
 		robot->gravityVector(g);
 
 		// read arm torques from redis and apply to simulated robot
 		command_torques = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY);
-		sim->setJointTorques(robot_name, command_torques);
+		sim->setJointTorques(robot_name, command_torques + g);
 
 		command_torques_ball = redis_client.getEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY);
                 sim->setJointTorques(obj_name, command_torques_ball); 
