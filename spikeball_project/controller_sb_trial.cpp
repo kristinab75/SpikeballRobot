@@ -202,7 +202,7 @@ while (runloop)
 		Vector3d targetPos;
 		targetPos << 0,0,0;
 		output = getPrediction(x_ball, x_vel_ball, targetPos, r, centerPos, prevPred);
-		robot_des = output(3);
+		int robot_des = output(3);
 		x_pred << output(0), output(1), output(2);
 
 
@@ -225,7 +225,7 @@ while (runloop)
 
 		// Change x_des depending on which robot will hit it
 		if (robot_des == 0) {
-			x_des = x_pred;
+			x_des << x_pred(0), x_pred(1) -1.3, x_pred(2);
 			Rd = R_pred;
 		} else if  (robot_des == 1) {
 
@@ -234,23 +234,29 @@ while (runloop)
 		} else if  (robot_des == 3) {
 
 		} else {			// no one goes for it
-			x_des = x;
-			Rd = R;
+			//x_des = x;
+			//Rd = R;
+			control_torques.setZero();
+			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
+			continue;
 		}
 		
 		
-		if (counter % 1 == 0) {
+		//if (counter % 1 == 0) {
 				
 			cout << "X des: " << x_des << "\n";
 			cout << "PRED: x: " << x_pred[0] << ", y: " << x_pred[1] << ", z: " << x_pred[2] << "\n";
 			cout << "BALL: x: " << x_ball[0] << ", y: " << x_ball[1] << ", z: " << x_ball[2] << "\n";
-			cout << "\n";
+			
 
-			cout << "ORIENTATION: " << Rd << "\n";
+			//cout << "ORIENTATION: " << Rd << "\n";
 			cout << "Des Robot: " << robot_des << "\n";
+			 cout << "\n";
 			// REACHABLE SPACE
-			cout << "VELOCITY " << x_vel_ball(2) << "\n";
-		}
+			//cout << "VELOCITY " << x_vel_ball(2) << "\n";
+		//}
+
+		
 		
 		/////////////////////////////////
 
@@ -385,55 +391,54 @@ int getRobot(Vector3d endPos) {
 */
 
 VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos, Vector3d prevPred) {
-
-    // initPos      - [x,y,z] initial position
+ 	// initPos      - [x,y,z] initial position
     // initVel      - [vx, vy, vz] initial velocity
     // targetPos    - [x,y,z] desired final position
     // r            - reachable radius around a robot
     // centerPos    - [x,y,z] matrix of robot positions
-    
+
     double g = 9.81;
     int numRobots = 4;
     int robotHit = -1;
     double x1 = 0;
     double y1 = 0;
-    
+
     for (int i = 0; i < numRobots; i++) {
-        
+
         if (initVel(0) == 0) {
             //std::cout << "Warning: Zero X Velocity caused divide by Zero \n";
             continue;
         }
-        
+
         double M = initVel(1)/initVel(0); // XY slope of trajectory
         double B = initPos(1) - initPos(0)*M; // Y intercept
-        
+
         double a = centerPos(i,0);
         double b = centerPos(i,1);
-        
+
         // check for real solutions
         double solutionCheck = pow(r,2)*(1+pow(M,2)) - pow((b - M*a - B),2);
         if (solutionCheck <= 0) {
             continue; // if we dont have two real solutions, skip to next robot
         }
-        
+
         // candidate x values
         double x1_1 = ((a + b*M - B*M) - sqrt(-(pow(a,2))*(pow(M,2)) + 2*a*b*M - 2*a*B*M - (pow(b,2)) + 2*b*B - (pow(B,2)) + (pow(M,2)) * (pow(r,2)) + (pow(r,2))) )   /  (pow(M,2) + 1);
-        
+
         double x1_2 = ((a + b*M - B*M) + sqrt(-(pow(a,2))*(pow(M,2)) + 2*a*b*M - 2*a*B*M - (pow(b,2)) + 2*b*B - (pow(B,2)) + (pow(M,2)) * (pow(r,2)) + (pow(r,2))) )   /  (pow(M,2) + 1);
-        
+
         // checks solutions to see if it in the correct direction
         if (x1_1 - initPos(0) > 0 && initVel(0) < 0){
             continue;
         } else if (x1_1 - initPos(0) < 0 && initVel(0) > 0){
             continue;
         }
-        
+
         double dist1 = pow( (x1_1 - initPos(0)) ,2) + pow(((M*x1_1 + B) - initPos(1)) ,2);
         double dist2 = pow( (x1_2 - initPos(0)) ,2) + pow(((M*x1_2 + B) - initPos(1)) ,2);
-        
-      
-        
+
+
+
         if (dist1 < dist2) {
             x1 = x1_1;
             y1 = M*(x1_1) + B;
@@ -441,22 +446,33 @@ VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
             x1 = x1_2;
             y1 = M*(x1_2) + B;
         }
-        
+
+	double t1 = (x1 - initPos(0)) / initVel(0);
+	double z_intersect = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2);
+
+	if (z_intersect < 0) {
+		continue;
+	}
+
         robotHit = i;
     }
-    
-    
-    Vector3d endPos;
+
+
+    VectorXd endPos = VectorXd::Zero(4);
     if (robotHit == -1) {
        // std::cout << "Warning: No robots intersect this trajectory\n";
-        //endPos << 0,0,0;
-        return prevPred;
+        endPos << prevPred(0), prevPred(1), prevPred(2), -1;
+        return endPos;
     } else {
         cout << "///////////////////////////ROBOT WILL INTERSECT///////////////////////\n";
-	double t1 = (x1 - initPos(0)) / initVel(0);
+    double t1 = (x1 - initPos(0)) / initVel(0);
         double z1 = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2);
-	y1 = y1 - 1.3;
-        endPos << x1,y1,z1;
+	/*if (z1 < 0) {
+		endPos << prevPred(0), prevPred(1), prevPred(2), -1;
+        	return endPos; 
+	}*/
+
+        endPos << x1,y1,z1, robotHit;
         return endPos;
     }
 }
