@@ -130,6 +130,10 @@ int main() {
 
         runloop = true;
 
+	//Variables to initialize ball velocity 
+	VectorXd initVel(6);
+        initVel << 1, 1, 1, 1, 1, 1;
+
 	// Initialize ball velocity
 	/*VectorXd control_torques_ball = VectorXd::Zero(ball->dof());
 	control_torques_ball << -1, 1, 0.2,0,0,0;
@@ -144,12 +148,11 @@ while (runloop)
                 fTimerDidSleep = timer.waitForNextLoop();
 
 		if (counter == 0) {
-			redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, ball->_dq);
-			ball->_dq(0) = 0;
-			ball->_dq(1) = 1;
-			ball->_dq(2) = -1;
-			ball->updateModel();
-		}
+                        redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
+                } else {
+                        initVel << 0,0,0,0,0,0;
+                        redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
+                }
 
                 // read robot state from redis
                 robot->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEY);

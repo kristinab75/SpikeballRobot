@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 
-<world name="spikeball_world" gravity="0.0 0.0 0.0">
+<world name="spikeball_world" gravity="0.0 0.0 -9.8">
 
 	<robot name="panda_spikeball">
 		<model dir="./resources" path="panda_spikeball.urdf" name="panda_spikeball" />

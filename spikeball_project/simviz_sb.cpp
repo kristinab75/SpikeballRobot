@@ -319,8 +319,8 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 		// Set up initial velocity of ball
 		firstLoop = redis_client.getEigenMatrixJSON(FIRST_LOOP_KEY);
 		if (firstLoop(0) == 1) {
-			object->_dq(0) = -1;
-			object->_dq(1) = 2;
+			object->_dq(0) = -2;
+			object->_dq(1) = 4;
 			object->_dq(2) = 0;
 			object->_q(0) = 0;
 			object->_q(1) = 0;
