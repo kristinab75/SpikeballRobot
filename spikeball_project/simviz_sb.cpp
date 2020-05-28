@@ -49,7 +49,7 @@ const std::string BALL_TORQUES_COMMANDED_KEY  = "cs225a::robot::ball::actuators:
 const std::string FIRST_LOOP_KEY = "cs225a::robot::ball::initvel";
 
 // simulation thread
-void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim);
+void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim, UIForceWidget *ui_force_widget);
 
 // callback to print glfw errors
 void glfwError(int error, const char* description);
@@ -77,6 +77,7 @@ bool fTransYn = false;
 bool fTransZp = false;
 bool fTransZn = false;
 bool fRotPanTilt = false;
+bool fRobotLinkSelect = false;
 
 int main() {
 	cout << "Loading URDF world model file: " << world_file << endl;
@@ -151,6 +152,10 @@ int main() {
 	glfwSetKeyCallback(window, keySelect);
 	glfwSetMouseButtonCallback(window, mouseClick);
 
+	// init click force widget 
+	auto ui_force_widget = new UIForceWidget(robot_name, robot, graphics);
+	ui_force_widget->setEnable(false);
+
 	// initialize glew
 	glewInitialize();
 
@@ -168,7 +173,7 @@ int main() {
         //redis_client.setEigenMatrixJSON(OBJ_JOINT_VELOCITIES_KEY, object->_dq);
 
 	// start simulation thread
-	thread sim_thread(simulation, robot, object, sim);
+	thread sim_thread(simulation, robot, object, sim, ui_force_widget);
 
 	// while window is open:
 	while (!glfwWindowShouldClose(window))
@@ -248,6 +253,32 @@ int main() {
 		}
 		graphics->setCameraPose(camera_name, camera_pos, cam_up_axis, camera_lookat);
 		glfwGetCursorPos(window, &last_cursorx, &last_cursory);
+
+		ui_force_widget->setEnable(fRobotLinkSelect);
+		if (fRobotLinkSelect)
+		{
+			double cursorx, cursory;
+			int wwidth_scr, wheight_scr;
+			int wwidth_pix, wheight_pix;
+			std::string ret_link_name;
+			Eigen::Vector3d ret_pos;
+
+			// get current cursor position
+			glfwGetCursorPos(window, &cursorx, &cursory);
+
+			glfwGetWindowSize(window, &wwidth_scr, &wheight_scr);
+			glfwGetFramebufferSize(window, &wwidth_pix, &wheight_pix);
+
+			int viewx = floor(cursorx / wwidth_scr * wwidth_pix);
+			int viewy = floor(cursory / wheight_scr * wheight_pix);
+
+			if (cursorx > 0 && cursory > 0)
+			{
+				ui_force_widget->setInteractionParams(camera_name, viewx, wheight_pix - viewy, wwidth_pix, wheight_pix);
+				//TODO: this behavior might be wrong. this will allow the user to click elsewhere in the screen
+				// then drag the mouse over a link to start applying a force to it.
+			}
+		}
 	}
 
 	// wait for simulation to finish
@@ -265,7 +296,7 @@ int main() {
 
 //------------------------------------------------------------------------------
 
-void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim)
+void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim, UIForceWidget *ui_force_widget)
 {
 	// prepare simulation
 	int dof = robot->dof();
@@ -310,6 +341,8 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
     std::default_random_engine generator;
     std::normal_distribution<double> dist(mean, stddev);
 
+	double kvj = 10;
+
 	VectorXd firstLoop(6);
 	firstLoop << 0,0,0,0,0,0;
 
@@ -343,13 +376,13 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 		command_torques_ball = redis_client.getEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY);
                 sim->setJointTorques(obj_name, command_torques_ball); 
 
-//		ui_force_widget->getUIForce(ui_force);
-//		ui_force_widget->getUIJointTorques(ui_force_command_torques);
+		ui_force_widget->getUIForce(ui_force);
+		ui_force_widget->getUIJointTorques(ui_force_command_torques);
 
-//		if (fRobotLinkSelect)
-//			sim->setJointTorques(robot_name, command_torques + ui_force_command_torques - robot->_M*kvj*robot->_dq + g);
-//		else
-//			sim->setJointTorques(robot_name, command_torques - robot->_M*kvj*robot->_dq + g);  // can comment out the joint damping if controller does this 
+		if (fRobotLinkSelect)
+			sim->setJointTorques(robot_name, command_torques + ui_force_command_torques - robot->_M*kvj*robot->_dq + g);
+		else
+			sim->setJointTorques(robot_name, command_torques - robot->_M*kvj*robot->_dq + g);  // can comment out the joint damping if controller does this 
 
 		// integrate forward
 		double curr_time = timer.elapsedTime() / time_slowdown_factor;
@@ -501,7 +534,7 @@ void mouseClick(GLFWwindow* window, int button, int action, int mods) {
 			break;
 		// if right click: don't handle. this is for menu selection
 		case GLFW_MOUSE_BUTTON_RIGHT:
-			//TODO: menu
+			fRobotLinkSelect = set;
 			break;
 		// if middle click: don't handle. doesn't work well on laptops
 		case GLFW_MOUSE_BUTTON_MIDDLE:
