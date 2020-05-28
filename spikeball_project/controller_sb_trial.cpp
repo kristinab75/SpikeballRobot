@@ -28,7 +28,7 @@ double sat(double x) {
 // ball detection functions
 Vector3d getNoisyPosition(Vector3d posInWorld);
 int getRobot(Vector3d endPos);
-Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos, Vector3d prevPred);
+Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos);
 MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r);
 
 #define RAD(deg) ((double)(deg) * M_PI / 180.0)
@@ -134,8 +134,6 @@ int main() {
 	//Variables to initialize ball velocity 
 	VectorXd initVel(6);
         initVel << 1, 1, 1, 1, 1, 1;
-	Vector3d prevPred;
-	prevPred << 0,0,0;
 
 while (runloop)
         {
@@ -197,9 +195,8 @@ while (runloop)
 		double r = 1.3;
 		Vector3d targetPos;
 		targetPos << 0,0,0;
-		x_pred = getPrediction(x_ball, x_vel_ball, targetPos, r, centerPos, prevPred);
+		x_pred = getPrediction(x_ball, x_vel_ball, targetPos, r, centerPos);
 
-		prevPred = x_pred;
 		cout << "PRED: x: " << x_pred[0] << ", y: " << x_pred[1] << ", z: " << x_pred[2] << "\n";
 		cout << "BALL: x: " << x_ball[0] << ", y: " << x_ball[1] << ", z: " << x_ball[2] << "\n";
 		cout << "\n";
@@ -360,7 +357,7 @@ int getRobot(Vector3d endPos) {
 * Returns the predicted end position of the ball given a position and velocity of the ball's trajectory
 */
 
-Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos, Vector3d prevPred) {
+Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos) {
 
     // initPos      - [x,y,z] initial position
     // initVel      - [vx, vy, vz] initial velocity
@@ -425,14 +422,13 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     Vector3d endPos;
     if (robotHit == -1) {
        // std::cout << "Warning: No robots intersect this trajectory\n";
-        //endPos << 0,0,0;
-        return prevPred;
+        endPos << 0,0,0;
+        return endPos;
     } else {
         cout << "///////////////////////////ROBOT WILL INTERSECT///////////////////////\n";
 	double t1 = (x1 - initPos(0)) / initVel(0);
         double z1 = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2);
         endPos << x1,y1,z1;
-	if (isnan(x1) || isnan(y1) || isnan(z1)) return prevPred;
         return endPos;
     }
 }
