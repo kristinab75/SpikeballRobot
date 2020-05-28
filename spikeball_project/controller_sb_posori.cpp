@@ -37,10 +37,10 @@ MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd t
 #define RAD(deg) ((double)(deg) * M_PI / 180.0)
 
 // Location of URDF files specifying world and robot information
-const string robot_file_1 = "./resources/panda_spikeball1.urdf";
-const string robot_file_2 = "./resources/panda_spikeball2.urdf";
-const string robot_file_3 = "./resources/panda_spikeball3.urdf";
-const string robot_file_4 = "./resources/panda_spikeball4.urdf";
+const string robot_file_1 = "./resources/panda_spikeball.urdf";
+const string robot_file_2 = "./resources/panda_spikeball.urdf";
+const string robot_file_3 = "./resources/panda_spikeball.urdf";
+const string robot_file_4 = "./resources/panda_spikeball.urdf";
 const string ball_file = "./resources/ball.urdf";
 
 // Redis is just a key value store, publish/subscribe is also possible
