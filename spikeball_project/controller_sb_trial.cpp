@@ -27,6 +27,7 @@ double sat(double x) {
 
 // ball detection functions
 Vector3d getNoisyPosition(Vector3d posInWorld);
+int getRobot(Vector3d endPos);
 Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos);
 MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r);
 
@@ -134,15 +135,6 @@ int main() {
 	VectorXd initVel(6);
         initVel << 1, 1, 1, 1, 1, 1;
 
-	// Initialize ball velocity
-	/*VectorXd control_torques_ball = VectorXd::Zero(ball->dof());
-	control_torques_ball << -1, 1, 0.2,0,0,0;
-	redis_client.setEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY, control_torques_ball);*/
-	
-	/*ball->_dq << 0, 1, -1, 0, 0, 0;
-	ball->updateModel();
-	redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, ball->_dq);*/
-
 while (runloop)
         {
                 fTimerDidSleep = timer.waitForNextLoop();
@@ -182,15 +174,11 @@ while (runloop)
 		x_ball[1] = x_ball[1] -1;
 		x_ball[2] = x_ball[2] + 1;
 
+		// Print statement to know when it hit net
+		if (x_vel_ball(2) > 0) cout << "********************** HIT NET ***************** \n";
+
 		///////////////////////////////
 		// FINDING X DESIRED!!!!!
-
-		// Don't actually think we need to detect this? we just always track it?
-		//Detect if ball has hit net in the past and it is necessary for robot to move
-		/*hitObj = hasHitObject(ball);
-		if (hitObj) {
-			numObjHit++;
-		} */
 
 		//Get noisy position
 		//x_ball = getNoisyPosition(x_ball);	// can just comment this out for no noise
@@ -213,15 +201,15 @@ while (runloop)
 		cout << "BALL: x: " << x_ball[0] << ", y: " << x_ball[1] << ", z: " << x_ball[2] << "\n";
 		cout << "\n";
 		// Find what robot's joint space its in
-		//int robot_des = getRobot(x_pred);
+		int robot_des = getRobot(x_pred);
 
 		// REACHABLE SPACE
 		//temp fix for one robot
-		int robot_des = 0;
-		if (abs(x_ball[0] - x_world[0]) + abs(x_ball[1] - x_world[1]) < 0.5) {
+		//int robot_des = 0;
+		//if (abs(x_ball[0] - x_world[0]) + abs(x_ball[1] - x_world[1]) < 0.5) {
 		//if (x_pred[0] < abs(x_world[0] - .5) && x_pred[1] < abs(x_world[1] - .5)) {
-			robot_des = 1;
-		}
+		//	robot_des = 1;
+		//}
 
 		// Change x_des depending on which robot will hit it
 		if (robot_des == 1) {
@@ -282,8 +270,8 @@ while (runloop)
                 VectorXd F(6);
                 F = Lambda0 * pd;
 		//cout << pd << "\n";
-		control_torques.setZero();
-               //control_torques = J.transpose() * F + N.transpose() * ( Gamma_damp ) + 0*g;  // gravity is compensated in simviz loop as of now
+		//control_torques.setZero();
+               control_torques = J.transpose() * F + N.transpose() * ( Gamma_damp ) + 0*g;  // gravity is compensated in simviz loop as of now
   // send torques to redis
                 redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
 
@@ -325,6 +313,46 @@ Vector3d getNoisyPosition(Vector3d posInWorld) {
     return pos;
 }
 
+int getRobot(Vector3d endPos) {
+    int botNum = 0;
+    Vector3d start;
+    start << 0,0,0;
+    Vector3d robot1org;
+    robot1org << 0,1.3,0;
+    Vector3d robot2org;
+    robot2org << 1.3,0,0;
+    Vector3d robot3org;
+    robot3org << 0,-1.3,0;
+    Vector3d robot4org;
+    robot4org<< -1.3,0,0;
+    double dist1 = 0;
+    double dist2 = 0;
+    double dist3 = 0;
+    double dist4 = 0;
+    if (endPos == start) {
+        return 0;
+    } else {
+        for (int i=0; i<3; i++) {
+            dist1 = dist1 + ((endPos[i]-robot1org[i])*(endPos[i]-robot1org[i]));
+            dist2 = dist2 + ((endPos[i]-robot2org[i])*(endPos[i]-robot2org[i]));
+            dist3 = dist3 + ((endPos[i]-robot3org[i])*(endPos[i]-robot3org[i]));
+            dist4 = dist4 + ((endPos[i]-robot4org[i])*(endPos[i]-robot4org[i]));
+        }
+        if (dist1 > dist2 && dist1 > dist3 && dist1 > dist4) {
+            botNum = 1;
+        } else if (dist2 > dist1 && dist2 > dist3 && dist2 > dist4) {
+            botNum = 2;
+        } else if (dist3 > dist1 && dist3 > dist2 && dist3 > dist4) {
+            botNum = 3;
+        } else {
+            botNum = 4;
+        }
+        return botNum;
+    }
+}
+
+
+
 /*Aubrey
 * Returns the predicted end position of the ball given a position and velocity of the ball's trajectory
 */
@@ -346,7 +374,7 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     for (int i = 0; i < numRobots; i++) {
         
         if (initVel(0) == 0) {
-            std::cout << "Warning: Zero X Velocity caused divide by Zero";
+            //std::cout << "Warning: Zero X Velocity caused divide by Zero \n";
             continue;
         }
         
@@ -393,11 +421,12 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     
     Vector3d endPos;
     if (robotHit == -1) {
-        std::cout << "Warning: No robots intersect this trajectory";
+       // std::cout << "Warning: No robots intersect this trajectory\n";
         endPos << 0,0,0;
         return endPos;
     } else {
-        double t1 = (x1 - initPos(0)) / initVel(0);
+        cout << "///////////////////////////ROBOT WILL INTERSECT///////////////////////\n";
+	double t1 = (x1 - initPos(0)) / initVel(0);
         double z1 = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2);
         endPos << x1,y1,z1;
         return endPos;

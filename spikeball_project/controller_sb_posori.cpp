@@ -74,6 +74,8 @@ const std::string JOINT_TORQUES_COMMANDED_KEYS[] = {JOINT_TORQUES_COMMANDED_KEY_
 
 int main() {
 
+
+/*
         // Make sure redis-server is running at localhost with default port 6379
         // start redis client
         RedisClient redis_client = RedisClient();
@@ -387,10 +389,12 @@ while (runloop)
     std::cout << "Control Loop run time  : " << end_time << " seconds\n";
     std::cout << "Control Loop updates   : " << timer.elapsedCycles() << "\n";
     std::cout << "Control Loop frequency : " << timer.elapsedCycles()/end_time << "Hz\n";
-
+*/
 
     return 0;
 }
+
+
 
 /*Sam
 * Returns position of the ball with random normal noise to simulate position from camera
