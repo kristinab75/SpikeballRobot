@@ -28,8 +28,8 @@ double sat(double x) {
 // ball detection functions
 Vector3d getNoisyPosition(Vector3d posInWorld);
 int getRobot(Vector3d endPos);
-Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos);
-MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r);
+Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos, Vector3d prevPred);
+MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, Vector3d endPos);
 
 #define RAD(deg) ((double)(deg) * M_PI / 180.0)
 
@@ -118,6 +118,7 @@ int main() {
         Matrix3d R, Rd;
 	Matrix3d R_ball;
 
+	Matrix3d R_pred;
 
         // create a loop timer
         double control_freq = 1000;
@@ -134,6 +135,8 @@ int main() {
 	//Variables to initialize ball velocity 
 	VectorXd initVel(6);
         initVel << 1, 1, 1, 1, 1, 1;
+	Vector3d prevPred;
+	prevPred << 0,0,0;
 
 while (runloop)
         {
@@ -192,39 +195,39 @@ while (runloop)
 				-1.3, 0, 0;
 
 		// Find end effector position
-		double r = 1.3;
+		double r = 0.5;
 		Vector3d targetPos;
 		targetPos << 0,0,0;
-		x_pred = getPrediction(x_ball, x_vel_ball, targetPos, r, centerPos);
+		x_pred = getPrediction(x_ball, x_vel_ball, targetPos, r, centerPos, prevPred);
+		R_pred = getOrientationPrediction(x_ball, x_vel_ball, targetPos, r, x_pred);
 
 		cout << "PRED: x: " << x_pred[0] << ", y: " << x_pred[1] << ", z: " << x_pred[2] << "\n";
 		cout << "BALL: x: " << x_ball[0] << ", y: " << x_ball[1] << ", z: " << x_ball[2] << "\n";
 		cout << "\n";
+
+		cout << "ORIENTATION: " << Rd << "\n";
 		// Find what robot's joint space its in
 		int robot_des = getRobot(x_pred);
 
+		cout << "Des Robot: " << robot_des << "\n";
 		// REACHABLE SPACE
-		//temp fix for one robot
-		//int robot_des = 0;
-		//if (abs(x_ball[0] - x_world[0]) + abs(x_ball[1] - x_world[1]) < 0.5) {
-		//if (x_pred[0] < abs(x_world[0] - .5) && x_pred[1] < abs(x_world[1] - .5)) {
-		//	robot_des = 1;
-		//}
 
 		// Change x_des depending on which robot will hit it
-		if (robot_des == 1) {
-			x_des = x_ball;
+		if (robot_des == 3) {
+			x_des = x_pred;
+			Rd = R_pred;
 		} else if  (robot_des == 2) {
 
-		} else if  (robot_des == 3) {
+		} else if  (robot_des == 1) {
 
 		} else if  (robot_des == 4) {
 
 		} else {			// no one goes for it
 			x_des = x;
+			Rd = R;
 		}
 		
-		//x_des << 
+		cout << "X des: " << x_des << "\n";
 			
 		
 		/////////////////////////////////
@@ -251,9 +254,9 @@ while (runloop)
                 // Gamma_mid = - (kmid * (2 * robot->_q - (q_high + q_low)));
                 Gamma_damp = - (kdamp * robot->_dq);
 
-		 Rd << 0.696707, -0.717356, -7.0252e-12,
+/*		 Rd << 0.696707, -0.717356, -7.0252e-12,
                 -0.717356, -0.696707, -6.82297e-12,
-                 0, 9.79318e-12, -1;
+                 0, 9.79318e-12, -1;*/
 
                 Vector3d delta_phi;
                 delta_phi = -0.5 * (R.col(0).cross(Rd.col(0)) + R.col(1).cross(Rd.col(1)) + R.col(2).cross(Rd.col(2)));
@@ -357,7 +360,7 @@ int getRobot(Vector3d endPos) {
 * Returns the predicted end position of the ball given a position and velocity of the ball's trajectory
 */
 
-Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos) {
+Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos, Vector3d prevPred) {
 
     // initPos      - [x,y,z] initial position
     // initVel      - [vx, vy, vz] initial velocity
@@ -422,8 +425,8 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     Vector3d endPos;
     if (robotHit == -1) {
        // std::cout << "Warning: No robots intersect this trajectory\n";
-        endPos << 0,0,0;
-        return endPos;
+        //endPos << 0,0,0;
+        return prevPred;
     } else {
         cout << "///////////////////////////ROBOT WILL INTERSECT///////////////////////\n";
 	double t1 = (x1 - initPos(0)) / initVel(0);
@@ -437,7 +440,7 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
 
 
 
- MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, VectorXd endPos) {
+ MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, Vector3d endPos) {
 
      double g = 9.81;
      double t1 = (endPos(0) - initPos(0)) /  ( initVel(0));

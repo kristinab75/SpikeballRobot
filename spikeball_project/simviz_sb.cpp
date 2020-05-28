@@ -311,6 +311,7 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
     std::normal_distribution<double> dist(mean, stddev);
 
 	VectorXd firstLoop(6);
+	firstLoop << 0,0,0,0,0,0;
 
 	fSimulationRunning = true;
 	while (fSimulationRunning) {
@@ -321,7 +322,7 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 		if (firstLoop(0) == 1) {
 			object->_dq(0) = -2;
 			object->_dq(1) = 4;
-			object->_dq(2) = 0;
+			object->_dq(2) = 0.1;
 			object->_q(0) = 0;
 			object->_q(1) = 0;
 			object->_q(2) = 0;
