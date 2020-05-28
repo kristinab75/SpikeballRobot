@@ -28,7 +28,7 @@ double sat(double x) {
 // ball detection functions
 Vector3d getNoisyPosition(Vector3d posInWorld);
 int getRobot(Vector3d endPos);
-Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos, Vector3d prevPred);
+VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos, Vector3d prevPred);
 MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, Vector3d endPos);
 
 #define RAD(deg) ((double)(deg) * M_PI / 180.0)
@@ -138,12 +138,16 @@ int main() {
 	Vector3d prevPred;
 	prevPred << 0,0,0;
 
+	VectorXd output(4);
+
+
 while (runloop)
         {
                 fTimerDidSleep = timer.waitForNextLoop();
 
-		if (counter == 0) {
+		if (counter < 1000) {
                         redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
+			//continue;
                 } else {
                         initVel << 0,0,0,0,0,0;
                         redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
@@ -178,7 +182,6 @@ while (runloop)
 		x_ball[2] = x_ball[2] + 1;
 
 		// Print statement to know when it hit net
-		if (x_vel_ball(2) > 0) cout << "********************** HIT NET ***************** \n";
 
 		///////////////////////////////
 		// FINDING X DESIRED!!!!!
@@ -198,37 +201,56 @@ while (runloop)
 		double r = 0.5;
 		Vector3d targetPos;
 		targetPos << 0,0,0;
-		x_pred = getPrediction(x_ball, x_vel_ball, targetPos, r, centerPos, prevPred);
+		output = getPrediction(x_ball, x_vel_ball, targetPos, r, centerPos, prevPred);
+		robot_des = output(3);
+		x_pred << output(0), output(1), output(2);
+
+
+		if (x_pred(0) == 0 && x_pred(1) == 0 && x_pred(2)) x_pred = prevPred; 
 		R_pred = getOrientationPrediction(x_ball, x_vel_ball, targetPos, r, x_pred);
 
-		cout << "PRED: x: " << x_pred[0] << ", y: " << x_pred[1] << ", z: " << x_pred[2] << "\n";
-		cout << "BALL: x: " << x_ball[0] << ", y: " << x_ball[1] << ", z: " << x_ball[2] << "\n";
-		cout << "\n";
-
-		cout << "ORIENTATION: " << Rd << "\n";
 		// Find what robot's joint space its in
-		int robot_des = getRobot(x_pred);
+		/*int robot_des = getRobot(x_pred);
 
-		cout << "Des Robot: " << robot_des << "\n";
-		// REACHABLE SPACE
+
+		 if (x_vel_ball(2) > 0) {
+		// 	cout << "********************** HIT NET ***************** \n";
+			 x_des = x_pred;
+                        Rd = R_pred;
+
+		} else {
+			 x_des = x;
+                        Rd = R;
+		}*/
 
 		// Change x_des depending on which robot will hit it
-		if (robot_des == 3) {
+		if (robot_des == 0) {
 			x_des = x_pred;
 			Rd = R_pred;
-		} else if  (robot_des == 2) {
-
 		} else if  (robot_des == 1) {
 
-		} else if  (robot_des == 4) {
+		} else if  (robot_des == 2) {
+
+		} else if  (robot_des == 3) {
 
 		} else {			// no one goes for it
 			x_des = x;
 			Rd = R;
 		}
 		
-		cout << "X des: " << x_des << "\n";
-			
+		
+		if (counter % 1 == 0) {
+				
+			cout << "X des: " << x_des << "\n";
+			cout << "PRED: x: " << x_pred[0] << ", y: " << x_pred[1] << ", z: " << x_pred[2] << "\n";
+			cout << "BALL: x: " << x_ball[0] << ", y: " << x_ball[1] << ", z: " << x_ball[2] << "\n";
+			cout << "\n";
+
+			cout << "ORIENTATION: " << Rd << "\n";
+			cout << "Des Robot: " << robot_des << "\n";
+			// REACHABLE SPACE
+			cout << "VELOCITY " << x_vel_ball(2) << "\n";
+		}
 		
 		/////////////////////////////////
 
@@ -286,6 +308,8 @@ while (runloop)
 
         control_torques.setZero();
         redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
+ 	initVel << 0,0,0,0,0,0;
+        redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
 
         double end_time = timer.elapsedTime();
     std::cout << "\n";
@@ -360,7 +384,7 @@ int getRobot(Vector3d endPos) {
 * Returns the predicted end position of the ball given a position and velocity of the ball's trajectory
 */
 
-Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos, Vector3d prevPred) {
+VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos, Vector3d prevPred) {
 
     // initPos      - [x,y,z] initial position
     // initVel      - [vx, vy, vz] initial velocity
@@ -431,6 +455,7 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
         cout << "///////////////////////////ROBOT WILL INTERSECT///////////////////////\n";
 	double t1 = (x1 - initPos(0)) / initVel(0);
         double z1 = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2);
+	y1 = y1 - 1.3;
         endPos << x1,y1,z1;
         return endPos;
     }

@@ -1,7 +1,7 @@
 #include <math.h>
 using namespace Eigen;
 
-Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos) {
+VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos, Vector3d prevPred) {
 
     // initPos      - [x,y,z] initial position
     // initVel      - [vx, vy, vz] initial velocity
@@ -12,15 +12,18 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     double g = 9.81;
     int numRobots = 4;
     int robotHit = -1;
+    double x1 = 0;
+    double y1 = 0;
     
     for (int i = 0; i < numRobots; i++) {
         
         if (initVel(0) == 0) {
-            std::cout << "Warning: Zero X Velocity caused divide by Zero";
-        } else {
-            double M = initVel(1)/initVel(0); // XY slope of trajectory
-            double B = initPos(1) - initPos(0)*M; // Y intercept
+            //std::cout << "Warning: Zero X Velocity caused divide by Zero \n";
+            continue;
         }
+        
+        double M = initVel(1)/initVel(0); // XY slope of trajectory
+        double B = initPos(1) - initPos(0)*M; // Y intercept
         
         double a = centerPos(i,0);
         double b = centerPos(i,1);
@@ -46,31 +49,33 @@ Vector3d getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
         double dist1 = pow( (x1_1 - initPos(0)) ,2) + pow(((M*x1_1 + B) - initPos(1)) ,2);
         double dist2 = pow( (x1_2 - initPos(0)) ,2) + pow(((M*x1_2 + B) - initPos(1)) ,2);
         
+      
+        
         if (dist1 < dist2) {
-            double x1 = x1_1;
-            double y1 = M*(x1_1) + B;
+            x1 = x1_1;
+            y1 = M*(x1_1) + B;
         } else {
-            double x1 = x1_2;
-            double y1 = M*(x1_2) + B;
+            x1 = x1_2;
+            y1 = M*(x1_2) + B;
         }
         
         robotHit = i;
     }
     
     
-    Vector3d endPos;
+    VectorXd endPos = VectorXd::Zero(4);
     if (robotHit == -1) {
-        std::cout << "Warning: No robots intersect this trajectory";
-        endPos << 0,0,0;
+       // std::cout << "Warning: No robots intersect this trajectory\n";
+        endPos << prevPred(0), prevPred(0), prevPred(0), -1;
         return endPos;
     } else {
-        double t1 = (x1 - initPos(0)) / initVel(0);
+        cout << "///////////////////////////ROBOT WILL INTERSECT///////////////////////\n";
+    double t1 = (x1 - initPos(0)) / initVel(0);
         double z1 = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2);
-        endPos << x1,y1,z1;
+        endPos << x1,y1,z1, robotHit;
         return endPos;
     }
 }
-               
 
 
 
