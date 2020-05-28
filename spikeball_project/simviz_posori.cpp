@@ -67,6 +67,8 @@ const std::string JOINT_ANGLES_KEYS[] = {JOINT_ANGLES_KEY_1, JOINT_ANGLES_KEY_2,
 const std::string JOINT_VELOCITIES_KEYS[] = {JOINT_VELOCITIES_KEY_1, JOINT_VELOCITIES_KEY_2,JOINT_VELOCITIES_KEY_3,JOINT_VELOCITIES_KEY_4};
 const std::string JOINT_TORQUES_COMMAND_KEYS[] = {JOINT_TORQUES_COMMANDED_KEY_1, JOINT_TORQUES_COMMANDED_KEY_2, JOINT_TORQUES_COMMANDED_KEY_3, JOINT_TORQUES_COMMANDED_KEY_4};
 
+const string robot_names[] = {robot_name_1, robot_name_2, robot_name_3, robot_name_4};
+
 // simulation thread
 void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sai2Model::Sai2Model* robot_3, Sai2Model::Sai2Model* robot_4, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim);
 
@@ -322,11 +324,22 @@ int main() {
 
 void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sai2Model::Sai2Model* robot_3, Sai2Model::Sai2Model* robot_4, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim)
 {
+
+	Sai2Model::Sai2Model robots[4];
+	robots[0] = robot_1;
+	robots[1] = robot_2;
+	robots[2] = robot_3;
+	robots[3] = robot_4;
+
 	// prepare simulation
-	int dof = robot_1->dof();
-	VectorXd command_torques = VectorXd::Zero(dof);
+	int dof = robot[0]->dof();
+	VectorXd command_torques[4];
+
+	for(int i = 0; i < 4; i++) {
+		command_torques[i] = VectorXd::Zero(dof);
+		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[i], command_torques[i]);
+	}
 	VectorXd command_torques_ball = VectorXd::Zero(object->dof());
-	redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, command_torques);
 	redis_client.setEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY, command_torques_ball);
 
 	// create a timer
@@ -353,7 +366,7 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 	const std::string false_message = "Not Detected";
 
 	// setup redis client data container for pipeset (batch write)
-	std::vector<std::pair<std::string, std::string>> redis_data(4);  // set with the number of keys to write 
+	std::vector<std::pair<std::string, std::string>> redis_data(10);  // set with the number of keys to write 
 
 	// setup white noise generator
     const double mean = 0.0;
@@ -365,15 +378,23 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 	while (fSimulationRunning) {
 		fTimerDidSleep = timer.waitForNextLoop();
 
+		for(int i = 0; i < 4; i++) {
+			(robot[i])->gravityVector(g);
+
+			command_torques[i] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[i]);
+			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[i], command_torques[i]);
+			sim->setJointTorques(robot_names[i], command_torques[i]);
+		}
+
 		// get gravity torques
-		robot_1->gravityVector(g);
+//		robot_1->gravityVector(g);
 
 		// read arm torques from redis and apply to simulated robot
-		command_torques = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY);
-		sim->setJointTorques(robot_name_1, command_torques);
+//		command_torques = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY);
+//		sim->setJointTorques(robot_name_1, command_torques);
 
-		command_torques_ball = redis_client.getEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY);
-                sim->setJointTorques(obj_name, command_torques_ball); 
+//		command_torques_ball = redis_client.getEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY);
+//                sim->setJointTorques(obj_name, command_torques_ball); 
 
 //		ui_force_widget->getUIForce(ui_force);
 //		ui_force_widget->getUIJointTorques(ui_force_command_torques);
@@ -389,17 +410,23 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 		sim->integrate(loop_dt);
 
 		// read joint positions, velocities, update model
-		sim->getJointPositions(robot_name_1, robot_1->_q);
-		sim->getJointVelocities(robot_name_1, robot_1->_dq);
-		robot_1->updateModel();
+		for(int i = 0; i < 4; i++) {
+			sim->getJointPositions(robot_names[i], (robots[i])->_q);
+			sim->getJointVelocities(robot_names[i], (robots[i])->_dq);
+			(robots[i])->updateModel();
+		}
+
+//		sim->getJointPositions(robot_name_1, robot_1->_q);
+//		sim->getJointVelocities(robot_name_1, robot_1->_dq);
+//		robot_1->updateModel();
 
 		sim->getJointPositions(obj_name, object->_q);
 		sim->getJointVelocities(obj_name, object->_dq);
 		object->updateModel();
 
-		object->positionInWorld(obj_pos, "link6");
-		robot_1->positionInWorld(camera_pos, "link7");
-		robot_1->rotationInWorld(camera_ori, "link7");  // local to world frame 
+//		object->positionInWorld(obj_pos, "link6");
+//		robot_1->positionInWorld(camera_pos, "link7");
+//		robot_1->rotationInWorld(camera_ori, "link7");  // local to world frame 
 
 		// add position offset in world.urdf file since positionInWorld() doesn't account for this 
 //		obj_pos += obj_offset;
@@ -411,10 +438,15 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 
 //		redis_client.setEigenMatrixJSON(BALL_ANGLES_KEY, object->_q);
 //		redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, object->_dq);
-		redis_data.at(0) = std::pair<string, string>(JOINT_ANGLES_KEY, redis_client.encodeEigenMatrixJSON(robot_1->_q));
-		redis_data.at(1) = std::pair<string, string>(JOINT_VELOCITIES_KEY, redis_client.encodeEigenMatrixJSON(robot_1->_dq));
-		redis_data.at(2) = std::pair<string, string>(BALL_ANGLES_KEY, redis_client.encodeEigenMatrixJSON(object->_q));
-		redis_data.at(3) = std::pair<string, string>(BALL_VELOCITIES_KEY, redis_client.encodeEigenMatrixJSON(object->_dq));
+
+		for(int i = 0; i < 4; i++) {
+			redis_data.at(2*i) = std::pair<string, string>(JOINT_ANGLES_KEYS[i], redis_client.encodeEigenMatrixJSON((robots[i])->_q));
+			redis_data.at((2*i)+1) = std::pair<string, string>(JOINT_VELOCITIES_KEYS[i], redis_client.encodeEigenMatrixJSON((robots[i])->_dq));
+		}
+//		redis_data.at(0) = std::pair<string, string>(JOINT_ANGLES_KEY, redis_client.encodeEigenMatrixJSON(robot_1->_q));
+//		redis_data.at(1) = std::pair<string, string>(JOINT_VELOCITIES_KEY, redis_client.encodeEigenMatrixJSON(robot_1->_dq));
+		redis_data.at(8) = std::pair<string, string>(BALL_ANGLES_KEY, redis_client.encodeEigenMatrixJSON(object->_q));
+		redis_data.at(9) = std::pair<string, string>(BALL_VELOCITIES_KEY, redis_client.encodeEigenMatrixJSON(object->_dq));
 
 		//*************************************************************************//
 		//The following commented stuff is from Eric doing the redis pipeline stuff//
