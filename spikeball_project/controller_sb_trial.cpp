@@ -120,6 +120,8 @@ int main() {
 
 	Matrix3d R_pred;
 
+	//Matrix3d init_R;
+
         // create a loop timer
         double control_freq = 1000;
         LoopTimer timer;
@@ -277,10 +279,10 @@ while (runloop)
                 double kdamp = 10;
                 double kmid = 10;
 
-		x_des << .45, .02, 1;
-		Rd << cos(M_PI / 3.0), 0, sin(M_PI / 3.0),
+		x_des << 0, -0.8, 0.5;
+		/*Rd << cos(M_PI / 3.0), 0, sin(M_PI / 3.0),
 			  0, 1, 0,
-			  -sin(M_PI / 3.0), 0, cos(M_PI / 3.0);
+			  -sin(M_PI / 3.0), 0, cos(M_PI / 3.0);*/
 
 
                 // q_high << 2.8973, 1.7628, 2.8973, -0.0698, 2.8973, 3.7525, 2.8973;
@@ -289,9 +291,9 @@ while (runloop)
                 // Gamma_mid = - (kmid * (2 * robot->_q - (q_high + q_low)));
                 Gamma_damp = - (kdamp * robot->_dq);
 
-/*		 Rd << 0.696707, -0.717356, -7.0252e-12,
+		 Rd << 0.696707, -0.717356, -7.0252e-12,
                 -0.717356, -0.696707, -6.82297e-12,
-                 0, 9.79318e-12, -1;*/
+                 0, 9.79318e-12, -1;
 
                 Vector3d delta_phi;
                 delta_phi = -0.5 * (R.col(0).cross(Rd.col(0)) + R.col(1).cross(Rd.col(1)) + R.col(2).cross(Rd.col(2)));
