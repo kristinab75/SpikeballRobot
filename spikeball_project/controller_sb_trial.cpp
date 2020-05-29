@@ -225,8 +225,10 @@ while (runloop)
 
 		// Change x_des depending on which robot will hit it
 		if (robot_des == 0) {
-			x_des << x_pred(0), x_pred(1) -1.3, x_pred(2);
-			Rd = R_pred;
+			//x_des << x_pred(0), x_pred(1) -1.3, x_pred(2);
+			x_des << .2, .2, 1;
+			//Rd = R_pred;
+			Rd.setIdentity();
 		} else if  (robot_des == 1) {
 
 		} else if  (robot_des == 2) {
@@ -236,8 +238,8 @@ while (runloop)
 		} else {			// no one goes for it
 			//x_des = x;
 			//Rd = R;
-			control_torques.setZero();
-			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
+			//control_torques.setZero();
+			//redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
 			continue;
 		}
 		
@@ -274,6 +276,11 @@ while (runloop)
                 double kvj = 5;
                 double kdamp = 10;
                 double kmid = 10;
+
+		x_des << .45, .02, 1;
+		Rd << cos(M_PI / 3.0), 0, sin(M_PI / 3.0),
+			  0, 1, 0,
+			  -sin(M_PI / 3.0), 0, cos(M_PI / 3.0);
 
 
                 // q_high << 2.8973, 1.7628, 2.8973, -0.0698, 2.8973, 3.7525, 2.8973;
