@@ -17,12 +17,11 @@ void sighandler(int){runloop = false;}
 
 // helper function
 double sat(double x) {
-        if (abs(x) <= 1.0) {
-                return x;
-        }
-        else {
-                return signbit(x);
-        }
+    if (abs(x) <= 1.0) {
+        return x;
+    } else {
+        return signbit(x);
+    }
 }
 
 // ball detection functions
@@ -57,301 +56,295 @@ const std::string FIRST_LOOP_KEY = "cs225a::robot::ball::initvel";
 
 int main() {
 
-        // Make sure redis-server is running at localhost with default port 6379
-        // start redis client
-        RedisClient redis_client = RedisClient();
-        redis_client.connect();
+    // Make sure redis-server is running at localhost with default port 6379
+    // start redis client
+    RedisClient redis_client = RedisClient();
+    redis_client.connect();
 
-        // set up signal handler
-        signal(SIGABRT, &sighandler);
+    // set up signal handler
+    signal(SIGABRT, &sighandler);
 	signal(SIGTERM, &sighandler);
-        signal(SIGINT, &sighandler);
+    signal(SIGINT, &sighandler);
 
 	//auto detect = new ballDetection::ballDetection();
 
-        // load robots, read current state and update the model
-        auto robot = new Sai2Model::Sai2Model(robot_file, false);
-        robot->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEY);
-        robot->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEY);
-        robot->updateModel();
-    
-    VectorXd q_initial = robot->_q;
+    // load robots, read current state and update the model
+    auto robot = new Sai2Model::Sai2Model(robot_file, false);
+    robot->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEY);
+    robot->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEY);
+    robot->updateModel();
 
 	// load ball	
-        auto ball = new Sai2Model::Sai2Model(ball_file, false);		//+++++++++
-        ball->_q = redis_client.getEigenMatrixJSON(BALL_ANGLES_KEY);	//+++++++++
-        ball->_dq = redis_client.getEigenMatrixJSON(BALL_VELOCITIES_KEY);	//+++++++++
-        ball->updateModel();						//+++++++++
+    auto ball = new Sai2Model::Sai2Model(ball_file, false);		//+++++++++
+    ball->_q = redis_client.getEigenMatrixJSON(BALL_ANGLES_KEY);	//+++++++++
+    ball->_dq = redis_client.getEigenMatrixJSON(BALL_VELOCITIES_KEY);	//+++++++++
+    ball->updateModel();						//+++++++++
 
 	//Random variables
 	bool hitObj = false;		//+++++++++
 	int numObjHit = 0;		//+++++++++
 
-        // prepare controller
-        int dof = robot->dof();
-        const string link_name = "link7";
-        const Vector3d pos_in_link = Vector3d(0, 0, 0.15);	//CHANGE THIS FOR OUR OWN END EFFECTOR
+    // prepare controller
+    int dof = robot->dof();
+    const string link_name = "link7";
+    const Vector3d pos_in_link = Vector3d(0, 0, 0.15);	//CHANGE THIS FOR OUR OWN END EFFECTOR
 	
 	//CHANGE THESSSSEEEEEEEEEE
-        const string link_name_ball = "link6";		//+++++++++
-        const Vector3d pos_in_link_ball = Vector3d(0, 0, 0);	//+++++++++
+    const string link_name_ball = "link6";		//+++++++++
+    const Vector3d pos_in_link_ball = Vector3d(0, 0, 0);	//+++++++++
 
 	
-        VectorXd control_torques = VectorXd::Zero(dof);
-        VectorXd gravity = VectorXd::Zero(dof);
+    VectorXd control_torques = VectorXd::Zero(dof);
+    VectorXd gravity = VectorXd::Zero(dof);
     
 
-        // model quantities for operational space control
-        MatrixXd Jv = MatrixXd::Zero(3,dof);
-        MatrixXd Lambda = MatrixXd::Zero(3,3);
-        MatrixXd J_bar = MatrixXd::Zero(dof,3);
-        MatrixXd N = MatrixXd::Zero(dof,dof);
+    // model quantities for operational space control
+    MatrixXd Jv = MatrixXd::Zero(3,dof);
+    MatrixXd Lambda = MatrixXd::Zero(3,3);
+    MatrixXd J_bar = MatrixXd::Zero(dof,3);
+    MatrixXd N = MatrixXd::Zero(dof,dof);
 
-        robot->Jv(Jv, link_name, pos_in_link);
-        robot->taskInertiaMatrix(Lambda, Jv);
-        robot->dynConsistentInverseJacobian(J_bar, Jv);
-        robot->nullspaceMatrix(N, Jv);
+    robot->Jv(Jv, link_name, pos_in_link);
+    robot->taskInertiaMatrix(Lambda, Jv);
+    robot->dynConsistentInverseJacobian(J_bar, Jv);
+    robot->nullspaceMatrix(N, Jv);
 
-        VectorXd F(6), g(dof), b(dof), joint_task_torque(dof), Gamma_damp(dof), Gamma_mid(dof);;
-        VectorXd q_high(dof), q_low(dof);
-        Vector3d x, x_vel, p, w, x_des, x_pred;
-        Vector3d x_ball, x_vel_ball, p_ball, w_ball, x_world; 	 //+++++++++
-        Vector3d dxd, ddxd;
-        Matrix3d R, Rd;
-        Matrix3d R_ball;
+    VectorXd F(6), g(dof), b(dof), joint_task_torque(dof), Gamma_damp(dof), Gamma_mid(dof);;
+    VectorXd q_high(dof), q_low(dof), pd(6);
+    Vector3d x, x_vel, p, w, x_des, x_pred, pd_x, pd_w;
+    Vector3d x_ball, x_vel_ball, p_ball, w_ball, x_world; 	 //+++++++++
+    Vector3d dxd, ddxd, delta_phi;
+    Matrix3d R, Rd;
+    Matrix3d R_ball;
+    MatrixXd Lambda0(6, 6), J(6, dof);
     
-    Rd << 0.696707, -0.717356, -7.0252e-12,
-    -0.717356, -0.696707, -6.82297e-12,
-    0, 9.79318e-12, -1;
 
 	Matrix3d R_pred;
 
 	//Matrix3d init_R;
 
-        // create a loop timer
-        double control_freq = 1000;
-        LoopTimer timer;
-        timer.setLoopFrequency(control_freq);   // 1 KHz
-        double last_time = timer.elapsedTime(); //secs
-        bool fTimerDidSleep = true;
-        timer.initializeTimer(1000000); // 1 ms pause before starting loop
+    // create a loop timer
+    double control_freq = 1000;
+    LoopTimer timer;
+    timer.setLoopFrequency(control_freq);   // 1 KHz
+    double last_time = timer.elapsedTime(); //secs
+    bool fTimerDidSleep = true;
+    timer.initializeTimer(1000000); // 1 ms pause before starting loop
 
-        unsigned long long counter = 0;
+    unsigned long long counter = 0;
 
-        runloop = true;
+    runloop = true;
 
 	//Variables to initialize ball velocity 
 	VectorXd initVel(6);
-        initVel << 1, 1, 1, 1, 1, 1;
+    initVel << 1, 1, 1, 1, 1, 1;
 	Vector3d prevPred;
 	prevPred << 0,0,0;
 
 	VectorXd output(4);
 
-
-while (runloop)
-        {
+    while (runloop) {
         fTimerDidSleep = timer.waitForNextLoop();
 
-		if (counter < 1000) {
+        if (counter < 1000) {
             redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
-			//continue;
+            //continue;
         } else {
             initVel << 0,0,0,0,0,0;
             redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
         }
 
-                // read robot state from redis
+        // read robot state from redis
         robot->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEY);
         robot->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEY);
-		ball->_q =  redis_client.getEigenMatrixJSON(BALL_ANGLES_KEY);		 //+++++++++
-		ball->_dq = redis_client.getEigenMatrixJSON(BALL_VELOCITIES_KEY);	 //+++++++++
+        ball->_q =  redis_client.getEigenMatrixJSON(BALL_ANGLES_KEY);
+        ball->_dq = redis_client.getEigenMatrixJSON(BALL_VELOCITIES_KEY);
 
-                // update robot model and compute gravity
+        // update robot model and compute gravity
         robot->updateModel();
-		ball->updateModel();		 //+++++++++
+        ball->updateModel();		 //+++++++++
+        
         robot->gravityVector(g);
+        robot->Jv(Jv, link_name, pos_in_link);
+        robot->taskInertiaMatrix(Lambda, Jv);
+        robot->dynConsistentInverseJacobian(J_bar, Jv);
+        robot->nullspaceMatrix(N, Jv);
+        
+        //cout << "checks, gravity: " << g << " Jv: " << Jv << " Lambda: " << Lambda << " J_bar: " << J_bar << " N: " << N << "\n" << "\n";
 
-                // get robot's position, velocity, rotation
-                robot->position(x, link_name, pos_in_link);	
-                robot->linearVelocity(x_vel, link_name, pos_in_link);
-                robot->angularVelocity(w, link_name);			
-                robot->rotation(R, link_name);
+        // get robot's position, velocity, rotation
+        robot->position(x, link_name, pos_in_link);
+        robot->linearVelocity(x_vel, link_name, pos_in_link);
+        robot->angularVelocity(w, link_name, pos_in_link);
+        robot->rotation(R, link_name);
 
-		robot->positionInWorld(x_world, link_name, pos_in_link);  //+++++++++
+        //robot->positionInWorld(x_world, link_name, pos_in_link);  //+++++++++
 
-		//ball->position(x_ball, link_name_ball, pos_in_link_ball); 
-                ball->positionInWorld(x_ball, link_name_ball, pos_in_link_ball);	//+++++++++
-                ball->linearVelocityInWorld(x_vel_ball, link_name_ball, pos_in_link_ball);	//+++++++++
-                ball->angularVelocityInWorld(w_ball, link_name_ball);			//+++++++++
-                ball->rotationInWorld(R_ball, link_name_ball);			//+++++++++
-            
-		x_ball[1] = x_ball[1] -1;
-		x_ball[2] = x_ball[2] + 1;
-            
-            cout << "x_ball adjusted coordinates: " << x_ball(0) << "\t" << x_ball(1) << "\t" << x_ball(2) << "\n";
-            
-		// Print statement to know when it hit net
+        //ball->position(x_ball, link_name_ball, pos_in_link_ball);
+        ball->positionInWorld(x_ball, link_name_ball, pos_in_link_ball);	//+++++++
+        ball->linearVelocityInWorld(x_vel_ball, link_name_ball, pos_in_link_ball);	//+
+        ball->angularVelocityInWorld(w_ball, link_name_ball);			//+++++++++
+        ball->rotationInWorld(R_ball, link_name_ball);			//+++++++++
+        
+        x_ball[1] = x_ball[1] -1;
+        x_ball[2] = x_ball[2] + 1;
+        
+        //cout << "x_ball adjusted coordinates: " << x_ball(0) << "\t" << x_ball(1) << "\t" << x_ball(2) << "\n";
+        
+        // Print statement to know when it hit net
 
-		///////////////////////////////
-		// FINDING X DESIRED!!!!!
+        ///////////////////////////////
+        // FINDING X DESIRED!!!!!
 
-		//Get noisy position
-		//x_ball = getNoisyPosition(x_ball);	// can just comment this out for no noise
-		
-		// Kalman Filter to get prediction of next position and velocity
+        //Get noisy position
+        //x_ball = getNoisyPosition(x_ball);	// can just comment this out for no noise
+        
+        // Kalman Filter to get prediction of next position and velocity
 
-		MatrixXd centerPos(4,3);
-		centerPos << 	0, 1.3, 0,
-				1.3, 0, 0,
-				0, -1.3, 0,
-				-1.3, 0, 0;
+        /*
+        MatrixXd centerPos(4,3);
+        centerPos << 	0, 1.3, 0,
+                1.3, 0, 0,
+                0, -1.3, 0,
+                -1.3, 0, 0;
 
-		// Find end effector position
-		double r = 0.5;
-		Vector3d targetPos;
-		targetPos << 0,0,0;
-		output = getPrediction(x_ball, x_vel_ball, targetPos, r, centerPos, prevPred);
-		int robot_des = output(3);
-		x_pred << output(0), output(1), output(2);
-            
-            cout << "x_ball predicted: " << output(0) << "\t" << output(1) << "\t" << output(2) << "\n" << "\n";
-
-
-		if (x_pred(0) == 0 && x_pred(1) == 0 && x_pred(2)) x_pred = prevPred; 
-		R_pred = getOrientationPrediction(x_ball, x_vel_ball, targetPos, r, x_pred);
-
-		// Find what robot's joint space its in
-		/*int robot_des = getRobot(x_pred);
+        // Find end effector position
+        double r = 0.5;
+        Vector3d targetPos;
+        targetPos << 0,0,0;
+        output = getPrediction(x_ball, x_vel_ball, targetPos, r, centerPos, prevPred);
+        int robot_des = output(3);
+        x_pred << output(0), output(1), output(2);
+        
+        cout << "x_ball predicted: " << output(0) << "\t" << output(1) << "\t" << output(2) << "\n" << "\n";
 
 
-		 if (x_vel_ball(2) > 0) {
-		// 	cout << "********************** HIT NET ***************** \n";
-			 x_des = x_pred;
+        if (x_pred(0) == 0 && x_pred(1) == 0 && x_pred(2)) x_pred = prevPred;
+        R_pred = getOrientationPrediction(x_ball, x_vel_ball, targetPos, r, x_pred);
+*/
+        // Find what robot's joint space its in
+        /*int robot_des = getRobot(x_pred);
+
+
+         if (x_vel_ball(2) > 0) {
+        // 	cout << "********************** HIT NET ***************** \n";
+             x_des = x_pred;
                         Rd = R_pred;
 
-		} else {
-			 x_des = x;
+        } else {
+             x_des = x;
                         Rd = R;
-		}*/
+        }*/
 
-		// Change x_des depending on which robot will hit it
-		if (robot_des == 0) {
-			//x_des << x_pred(0), x_pred(1) -1.3, x_pred(2);
-			//x_des << .2, .2, 1;
-			//Rd = R_pred;
-			//Rd.setIdentity();
-		} else if  (robot_des == 1) {
+        // Change x_des depending on which robot will hit it
+        /*if (robot_des == 0) {
+            //x_des << x_pred(0), x_pred(1) -1.3, x_pred(2);
+            //x_des << .2, .2, 1;
+            //Rd = R_pred;
+            //Rd.setIdentity();
+        } else if  (robot_des == 1) {
 
-		} else if  (robot_des == 2) {
+        } else if  (robot_des == 2) {
 
-		} else if  (robot_des == 3) {
+        } else if  (robot_des == 3) {
 
-		} else {			// no one goes for it
-			//x_des = x;
-			//Rd = R;
-			//control_torques.setZero();
-			//redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
-			//continue;
-		}
-		
-		
-		//if (counter % 1 == 0) {
-		/*
-			cout << "X des: " << x_des << "\n";
-			cout << "PRED: x: " << x_pred[0] << ", y: " << x_pred[1] << ", z: " << x_pred[2] << "\n";
-			cout << "BALL: x: " << x_ball[0] << ", y: " << x_ball[1] << ", z: " << x_ball[2] << "\n";
-			
-
-			//cout << "ORIENTATION: " << Rd << "\n";
-			cout << "Des Robot: " << robot_des << "\n";
-			 cout << "\n";
-			// REACHABLE SPACE
-			//cout << "VELOCITY " << x_vel_ball(2) << "\n";
-         */
-		//}
-
-		
-		
-		/////////////////////////////////
-
-		// compute torques
-                MatrixXd J(6, dof);
-                robot->J_0(J, link_name, pos_in_link);
-                robot->nullspaceMatrix(N, J);
-
-                MatrixXd Lambda0(6, 6);
-                robot->taskInertiaMatrix(Lambda0, J);
-
-                double kp = 25;
-                double kv = 10;
-                double kpj = 400;
-                double kvj = 40;
-                double kdamp = 10;
-                double kmid = 10;
-
-		x_des << 0, 0.2, 0.2;
-            
+        } else {			// no one goes for it
+            //x_des = x;
+            //Rd = R;
+            //control_torques.setZero();
+            //redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
+            //continue;
+        }*/
         
-		/*Rd << cos(M_PI / 3.0), 0, sin(M_PI / 3.0),
-			  0, 1, 0,
-			  -sin(M_PI / 3.0), 0, cos(M_PI / 3.0);*/
+        
+        //if (counter % 1 == 0) {
+        /*
+            cout << "X des: " << x_des << "\n";
+            cout << "PRED: x: " << x_pred[0] << ", y: " << x_pred[1] << ", z: " << x_pred[2] << "\n";
+            cout << "BALL: x: " << x_ball[0] << ", y: " << x_ball[1] << ", z: " << x_ball[2] << "\n";
+         
+
+            //cout << "ORIENTATION: " << Rd << "\n";
+            cout << "Des Robot: " << robot_des << "\n";
+             cout << "\n";
+            // REACHABLE SPACE
+            //cout << "VELOCITY " << x_vel_ball(2) << "\n";
+         */
+        //}
+
+        
+        
+        /////////////////////////////////
+
+        // compute torques
+        robot->J_0(J, link_name, pos_in_link);
+        //robot->nullspaceMatrix(N, J);
+
+        robot->taskInertiaMatrix(Lambda0, J);
+
+        double kp = 100;
+        double kv = 20;
+        //double kpj = 10;
+        //double kvj = 5;
+        double kdamp = 14;
+        //double kmid = 10;
+
+        x_des << 0.6, 0.3, 0.4;
+    
+        Rd << cos(M_PI/3.0), 0, sin(M_PI/3.0),
+              0, 1, 0,
+              -sin(M_PI /3.0), 0, cos(M_PI/3.0);
 
 
-                // q_high << 2.8973, 1.7628, 2.8973, -0.0698, 2.8973, 3.7525, 2.8973;
-                // q_low << -2.8973, -1.7628, -2.8973, -3.0718, -2.8973, -0.0175, -2.8973;
+        // q_high << 2.8973, 1.7628, 2.8973, -0.0698, 2.8973, 3.7525, 2.8973;
+        // q_low << -2.8973, -1.7628, -2.8973, -3.0718, -2.8973, -0.0175, -2.8973;
 
-                // Gamma_mid = - (kmid * (2 * robot->_q - (q_high + q_low)));
-                Gamma_damp = - (kdamp * robot->_dq);
+        // Gamma_mid = - (kmid * (2 * robot->_q - (q_high + q_low)));
+        Gamma_damp = - (kdamp * robot->_dq);
 
-		/* Rd << 0.696707, -0.717356, -7.0252e-12,
+        /* Rd << 0.696707, -0.717356, -7.0252e-12,
                 -0.717356, -0.696707, -6.82297e-12,
                  0, 9.79318e-12, -1;*/
 
-                Vector3d delta_phi;
-                delta_phi = -0.5 * (R.col(0).cross(Rd.col(0)) + R.col(1).cross(Rd.col(1)) + R.col(2).cross(Rd.col(2)));
+        //Vector3d delta_phi = Vector3d::Zero();
+        delta_phi = -0.5 * (R.col(0).cross(Rd.col(0)) + R.col(1).cross(Rd.col(1)) + R.col(2).cross(Rd.col(2)));
 
-                double Vmax = 0.5;
-                dxd = - kp / kv * (x - x_des);
-                double nu = sat(Vmax / dxd.norm());
 
-                Vector3d pd_x = - kp * nu * (x - x_des) - kv * x_vel;
-                Vector3d pd_w = kp * (- delta_phi) - kv * w;
-                VectorXd pd(6);
-                pd << pd_x[0], pd_x[1], pd_x[2], pd_w[0], pd_w[1], pd_w[2];
+        double Vmax = 0.5;
+        dxd = - kp / kv * (x - x_des);
+        double nu = sat(Vmax / dxd.norm());
 
-                VectorXd F(6);
-                F = Lambda0 * pd;
-		//cout << pd << "\n";
-		//control_torques.setZero();
-            
-            
-            
-        //control_torques = J.transpose() * F + N.transpose() * ( Gamma_damp ) + 0*g;  // gravity is compensated in simviz loop as of now
-            
+        pd_x = (kp * nu * (x_des - x)) - (kv * x_vel);
+        pd_w = (kp * (- delta_phi)) - (kv * w);
+
+        pd << pd_x[0], pd_x[1], pd_x[2], pd_w[0], pd_w[1], pd_w[2];
         
-        control_torques = (-kvj * robot->_dq) - kpj * (robot->_q - q_initial);
-            
+        
+        F = Lambda0 * pd;
+        //cout << pd << "\n";
+        //control_torques.setZero();
+        
+        control_torques = (J.transpose() * F) + (N.transpose() * Gamma_damp) + 0*g;  // gravity is compensated in simviz loop as of now
+        
         // send torques to redis
         redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
 
-		//calc std of moving buffer of 1 --> std stays same if no spike
-		// threshold spike
+        //calc std of moving buffer of 1 --> std stays same if no spike
+        // threshold spike
 
-                counter++;
-        }
+        counter++;
+    }
 
-        control_torques.setZero();
-        redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
-        initVel << 0,0,0,0,0,0;
-        redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
+    control_torques.setZero();
+    redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEY, control_torques);
+    initVel << 0,0,0,0,0,0;
+    redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
 
         double end_time = timer.elapsedTime();
     std::cout << "\n";
     std::cout << "Control Loop run time  : " << end_time << " seconds\n";
     std::cout << "Control Loop updates   : " << timer.elapsedCycles() << "\n";
     std::cout << "Control Loop frequency : " << timer.elapsedCycles()/end_time << "Hz\n";
-
 
     return 0;
 }

@@ -313,7 +313,7 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 	LoopTimer timer;
 	timer.initializeTimer();
 	timer.setLoopFrequency(1000); 	
-	double time_slowdown_factor = 2.0;  // adjust to higher value (i.e. 2) to slow down simulation by this factor relative to real time (for slower machines)
+	double time_slowdown_factor = 6.0;  // adjust to higher value (i.e. 2) to slow down simulation by this factor relative to real time (for slower machines)
 	bool fTimerDidSleep = true;
 	double start_time = timer.elapsedTime() / time_slowdown_factor; // secs
 	double last_time = start_time;
@@ -355,8 +355,9 @@ void simulation(Sai2Model::Sai2Model* robot, Sai2Model::Sai2Model* object, Simul
 		// Set up initial velocity of ball
 		firstLoop = redis_client.getEigenMatrixJSON(FIRST_LOOP_KEY);
 		if (firstLoop(0) == 1 && !haveDone) {
-			object->_dq(0) = -2;
-			object->_dq(1) = 4;
+            // _dq is order z,y,x
+			object->_dq(0) = -1;
+			object->_dq(1) = 2;
 			object->_dq(2) = 0.1;
 			object->_q(0) = 0;
 			object->_q(1) = 0;

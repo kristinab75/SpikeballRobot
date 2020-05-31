@@ -10,6 +10,8 @@ ADD_EXECUTABLE (simviz_posori simviz_posori.cpp ${CS225A_COMMON_SOURCE})
 ADD_EXECUTABLE (controller_sb controller_sb.cpp ${CS225A_COMMON_SOURCE})
 ADD_EXECUTABLE (controller_sb_trial controller_sb_trial.cpp ${CS225A_COMMON_SOURCE})
 ADD_EXECUTABLE (controller_sb_posori controller_sb_posori.cpp ${CS225A_COMMON_SOURCE})
+ADD_EXECUTABLE (controller_sb_sam controller_sb_sam.cpp ${CS225A_COMMON_SOURCE})
+
 
 # and link the library against the executable
 TARGET_LINK_LIBRARIES (simviz_sb ${CS225A_COMMON_LIBRARIES})
@@ -17,6 +19,8 @@ TARGET_LINK_LIBRARIES (simviz_posori ${CS225A_COMMON_LIBRARIES} ${SAI2-PRIMITIVE
 TARGET_LINK_LIBRARIES (controller_sb ${CS225A_COMMON_LIBRARIES})
 TARGET_LINK_LIBRARIES (controller_sb_trial ${CS225A_COMMON_LIBRARIES})
 TARGET_LINK_LIBRARIES (controller_sb_posori ${CS225A_COMMON_LIBRARIES} ${SAI2-PRIMITIVES_LIBRARIES})
+TARGET_LINK_LIBRARIES (controller_sb_sam ${CS225A_COMMON_LIBRARIES})
+
 
 # export resources such as model files.
 # NOTE: this requires an install build
