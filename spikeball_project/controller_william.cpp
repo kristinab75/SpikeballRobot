@@ -17,7 +17,10 @@ using namespace Eigen;
 bool runloop = false;
 void sighandler(int){runloop = false;}
 
+#define JOINT_CONTROLLER      0
 #define POSORI_CONTROLLER     1
+
+int state = JOINT_CONTROLLER;
 
 // helper function
 double sat(double x) {
@@ -171,9 +174,9 @@ int main() {
         posori_task_1->_use_velocity_saturation_flag = false;
 	#endif
 	posori_task_1->_kp_pos = 20.0;
-	posori_task_1->_kv_pos = 2.0;
+	posori_task_1->_kv_pos = 10.0;
 	posori_task_1->_kp_ori = 20.0;
-	posori_task_1->_kv_ori = 2.0;
+	posori_task_1->_kv_ori = 10.0;
 	// posori_task_1->_desired_position = initial_qs[0];
 
 	// joint task
@@ -402,8 +405,38 @@ while (runloop)
 		// 	//}
 		// }
 
+		if(state == JOINT_CONTROLLER)
+		{
+			// update task model and set hierarchy
+			N_prec_1.setIdentity();
+			joint_task->updateTaskModel(N_prec_1);
+
+			// compute torques
+			joint_task->computeTorques(joint_task_torques);
+
+			control_torques[0] = joint_task_torques;
+
+			if( (robot_1->_q - q_init_desired).norm() < 0.15 )
+			{
+				posori_task_1->reInitializeTask();
+				posori_task_1->_desired_position += Vector3d(-0.1,0.1,0.1);
+				posori_task_1->_desired_orientation = AngleAxisd(M_PI/6, Vector3d::UnitX()).toRotationMatrix() * posori_task_1->_desired_orientation;
+
+				joint_task->reInitializeTask();
+				joint_task->_kp = 0;
+
+		    		robot_1->positionInWorld(xs[0], link_name, pos_in_link);
+				robot_1->rotationInWorld(Rs[0], link_name);
+
+				state = POSORI_CONTROLLER;
+			}
+		}
+
+		else if(state == POSORI_CONTROLLER)
+		{
+
 		Vector3d x_off;
-		x_off << 0.1, 0.1, 0.1;
+		x_off << 0, 0, 0; //0.1, 0.1, 0.1;
 		xs_des[0] = xs[0];
 		Rs_des[0] = Rs[0];
 		
@@ -420,7 +453,10 @@ while (runloop)
 		N_prec = posori_task_1->_N;
 		joint_task->updateTaskModel(N_prec);
 		joint_task->computeTorques(joint_task_torques);
-		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[0], posori_task_torques[0] + joint_task_torques);
+		control_torques[0] = posori_task_torques[0] + joint_task_torques;
+		}
+
+		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[0], control_torques[0]);
 
 		// posori_task_2->reInitializeTask();
 		// posori_task_2->_desired_position = xs_des[1];
@@ -461,6 +497,7 @@ while (runloop)
 //		for (int i = 0; i < 4; i++) {
 //			 redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[i], control_torques[i]);
 //		}
+		
 		 counter++;
         } // end loop
 	
