@@ -164,10 +164,10 @@ int main() {
 	posori_task_1->_kv_pos = 20.0;
 	posori_task_1->_kp_ori = 100.0;
 	posori_task_1->_kv_ori = 20.0;
-	posori_task_1->_desired_velocity << 5, 5, 5;
-	posori_task_1->_desired_angular_velocity << M_PI, M_PI, M_PI;
-	posori_task_1->_desired_acceleration << 5, 5, 5;
-	posori_task_1->_desired_angular_acceleration << 5*M_PI, 5*M_PI, 5*M_PI;
+	posori_task_1->_desired_velocity << 100, 100, 100;
+	posori_task_1->_desired_angular_velocity << 100*M_PI, 100*M_PI, 100*M_PI;
+	posori_task_1->_desired_acceleration << 100, 100, 100;
+	posori_task_1->_desired_angular_acceleration << 100*M_PI, 100*M_PI, 100*M_PI;
 
 	// joint task
 	auto joint_task_1 = new Sai2Primitives::JointTask(robot_1);
@@ -439,7 +439,7 @@ int main() {
 		controlled_robot = stoi(redis_client.get(ACTIVE_ROBOT));
 		// controlled_robot = 3;
 		Vector3d x_off;
-		x_off << .21, 0.32, 0.3;
+		x_off << -.21, -0.32, 0.59;
 		xs_des[controlled_robot] = x_off; //xs_init[controlled_robot] + x_off;
 		Rs_des[controlled_robot] = Rs_init[controlled_robot];
 		
