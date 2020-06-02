@@ -124,6 +124,10 @@ int main() {
 	q_init_desired << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
 	q_init_desired *= M_PI/180.0;
 
+	VectorXd q_init_desired_1(7);
+	q_init_desired_1 << 150, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
+	q_init_desired_1 *= M_PI/180.0;
+
 	// load robots
 	auto robot_1 = new Sai2Model::Sai2Model(robot_file, false);
 	robot_1->_q = q_init_desired;
@@ -369,7 +373,7 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 	LoopTimer timer;
 	timer.initializeTimer();
 	timer.setLoopFrequency(1000); 	
-	double time_slowdown_factor = 10.0;  // adjust to higher value (i.e. 2) to slow down simulation by this factor relative to real time (for slower machines)
+	double time_slowdown_factor = 5.0;  // adjust to higher value (i.e. 2) to slow down simulation by this factor relative to real time (for slower machines)
 	bool fTimerDidSleep = true;
 	double start_time = timer.elapsedTime() / time_slowdown_factor; // secs
 	double last_time = start_time;

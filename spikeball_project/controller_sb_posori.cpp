@@ -78,6 +78,9 @@ const std::string JOINT_ANGLES_KEYS[] = {JOINT_ANGLES_KEY_1, JOINT_ANGLES_KEY_2,
 const std::string JOINT_VELOCITIES_KEYS[] = {JOINT_VELOCITIES_KEY_1, JOINT_VELOCITIES_KEY_2,JOINT_VELOCITIES_KEY_3,JOINT_VELOCITIES_KEY_4};
 const std::string JOINT_TORQUES_COMMANDED_KEYS[] = {JOINT_TORQUES_COMMANDED_KEY_1, JOINT_TORQUES_COMMANDED_KEY_2, JOINT_TORQUES_COMMANDED_KEY_3, JOINT_TORQUES_COMMANDED_KEY_4};
 
+const bool robotHitBall = false;
+const bool ballHitNet = false;
+
 
 int main() {
 
@@ -153,13 +156,18 @@ int main() {
 	auto posori_task_1 =  new Sai2Primitives::PosOriTask(robot_1, control_link, control_point);
 	#ifdef USING_OTG
 	posori_task_1->_use_interpolation_flag = true;
-	#else
-        posori_task_1->_use_velocity_saturation_flag = false;
+//	#else
+//        posori_task_1->_use_velocity_saturation_flag = false;
 	#endif
+    posori_task_1->_use_velocity_saturation_flag = false;
 	posori_task_1->_kp_pos = 100.0;
 	posori_task_1->_kv_pos = 20.0;
 	posori_task_1->_kp_ori = 100.0;
 	posori_task_1->_kv_ori = 20.0;
+	posori_task_1->_desired_velocity << 5, 5, 5;
+	posori_task_1->_desired_angular_velocity << M_PI, M_PI, M_PI;
+	posori_task_1->_desired_acceleration << 5, 5, 5;
+	posori_task_1->_desired_angular_acceleration << 5*M_PI, 5*M_PI, 5*M_PI;
 
 	// joint task
 	auto joint_task_1 = new Sai2Primitives::JointTask(robot_1);
@@ -168,8 +176,8 @@ int main() {
 	#else
 		joint_task_1->_use_velocity_saturation_flag = true;
 	#endif
-	joint_task_1->_kp = 25.0;
-	joint_task_1->_kv = 10.0;
+	joint_task_1->_kp = 50.0;
+	joint_task_1->_kv = 20.0;
 	joint_task_1->_desired_position = q_init_desired;
 
 	/***** Robot 2 *****/
@@ -431,8 +439,8 @@ int main() {
 		controlled_robot = stoi(redis_client.get(ACTIVE_ROBOT));
 		// controlled_robot = 3;
 		Vector3d x_off;
-		x_off << -0.1, -0.6, 0;
-		xs_des[controlled_robot] = xs_init[controlled_robot] + x_off;
+		x_off << .21, 0.32, 0.3;
+		xs_des[controlled_robot] = x_off; //xs_init[controlled_robot] + x_off;
 		Rs_des[controlled_robot] = Rs_init[controlled_robot];
 		
 		// Control only the specified robot by controlled_robot, which is output from the prediction algorithm

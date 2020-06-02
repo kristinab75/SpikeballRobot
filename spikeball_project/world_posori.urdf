@@ -4,12 +4,12 @@
 
 	<robot name="panda_spikeball_1">
 		<model dir="./resources" path="panda_spikeball.urdf" name="panda_spikeball_1" />
-		<origin xyz="0.0 1.3 0.0" rpy="0 0 0" />
+		<origin xyz="0.0 1.3 0.0" rpy="0 0 3.1415926" />
 	</robot>
 
 	<robot name="panda_spikeball_2">
 		<model dir="./resources" path="panda_spikeball.urdf" name="panda_spikeball_2" />
-		<origin xyz="1.3 0 0.0" rpy="0 0 0" />
+		<origin xyz="1.3 0 0.0" rpy="0 0 1.57079632679" />
 	</robot>
 
 	<robot name="panda_spikeball_3">
@@ -19,7 +19,7 @@
 
 	<robot name="panda_spikeball_4">
 		<model dir="./resources" path="panda_spikeball.urdf" name="panda_spikeball_4" />
-		<origin xyz="-1.3 0 0.0" rpy="0 0 0" />
+		<origin xyz="-1.3 0 0.0" rpy="0 0 -1.57079632679" />
 	</robot>
 
 	<robot name="ball">
