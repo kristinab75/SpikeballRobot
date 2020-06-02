@@ -72,7 +72,6 @@ const string robot_names[] = {robot_name_1, robot_name_2, robot_name_3, robot_na
 
 // simulation thread
 void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sai2Model::Sai2Model* robot_3, Sai2Model::Sai2Model* robot_4, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim);
-// void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim);
 
 // callback to print glfw errors
 void glfwError(int error, const char* description);
@@ -119,38 +118,33 @@ int main() {
 	Eigen::Vector3d camera_pos, camera_lookat, camera_vertical;
 	graphics->getCameraPose(camera_name, camera_pos, camera_vertical, camera_lookat);
 
-	// desired initial joint angles for each robot
-	VectorXd q_init_desired(7);
-	q_init_desired << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
-	q_init_desired *= M_PI/180.0;
-
 	// load robots
 	auto robot_1 = new Sai2Model::Sai2Model(robot_file, false);
-	robot_1->_q = q_init_desired;
+//	robot_1->_q(0) = -0.8;
 	robot_1->updateModel();
 
 	auto robot_2 = new Sai2Model::Sai2Model(robot_file, false);
-	robot_2->_q = q_init_desired;
+//	robot_2->_q(0) = -0.8;
 	robot_2->updateModel();
 
 	auto robot_3 = new Sai2Model::Sai2Model(robot_file, false);
-	robot_3->_q = q_init_desired;
+//	robot_3->_q(0) = -0.8;
 	robot_3->updateModel();
 
 	auto robot_4 = new Sai2Model::Sai2Model(robot_file, false);
-	robot_4->_q = q_init_desired;
+//	robot_4->_q(0) = -0.8;
 	robot_4->updateModel();
 
 //	Sai2Model::Sai2Model robots[4];
 	
-	// VectorXd initial_qs[4];
-	// for (int i = 0; i < 4; i++) {
-	// 	robots[i] = new Sai2Model::Sai2Model(robot_file, false);
-	// 	(robots[i])->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[i]);
-	// 	(robots[i])->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[i]);
-	// 	inital_qs[i] = (robots[i])->_q;
-	// 	(robots[i])->updateModel();
-	// }
+//	VectorXd initial_qs[4];
+//	for (int i = 0; i < 4; i++) {
+//		robots[i] = new Sai2Model::Sai2Model(robot_file, false);
+		//(robots[i])->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[i]);
+		//(robots[i])->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[i]);
+		//inital_qs[i] = (robots[i])->_q;
+//		(robots[i])->updateModel();
+//	}
 
 	// load robot objects
 	auto object = new Sai2Model::Sai2Model(obj_file, false);
@@ -225,18 +219,17 @@ int main() {
 	redis_client.setEigenMatrixJSON(JOINT_ANGLES_KEYS[3], robot_4->_q); 
 	redis_client.setEigenMatrixJSON(JOINT_VELOCITIES_KEYS[3], robot_4->_dq); 
 
-	// for(int i = 0; i < 4; i++) {
-	// 	redis_client.setEigenMatrixJSON(JOINT_ANGLES_KEYS[i], (robots[i])->_q); 
-	// 	redis_client.setEigenMatrixJSON(JOINT_VELOCITIES_KEYS[i], (robots[i])->_dq);
-	// }
+//	for(int i = 0; i < 4; i++) {
+//		redis_client.setEigenMatrixJSON(JOINT_ANGLES_KEYS[i], (robots[i])->_q); 
+//		redis_client.setEigenMatrixJSON(JOINT_VELOCITIES_KEYS[i], (robots[i])->_dq);
+//	}
 
 	redis_client.setEigenMatrixJSON(BALL_ANGLES_KEY, object->_q);
-    redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, object->_dq);
+        redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, object->_dq);
 
 	// start simulation thread
 	//thread sim_thread(simulation, robots[1], robots[2], robots[3], robots[4], object, sim);
 	thread sim_thread(simulation, robot_1, robot_2, robot_3, robot_4, object, sim);
-	// thread sim_thread(simulation, robot_1, object, sim);
 
 	// while window is open:
 	while (!glfwWindowShouldClose(window))
@@ -341,46 +334,42 @@ int main() {
 //------------------------------------------------------------------------------
 
 void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sai2Model::Sai2Model* robot_3, Sai2Model::Sai2Model* robot_4, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim)
-// void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* object, Simulation::Sai2Simulation* sim)
 {
 
-	// Sai2Model::Sai2Model robots[4];
-	// robots[0] = robot_1;
-	// robots[1] = robot_2;
-	// robots[2] = robot_3;
-	// robots[3] = robot_4;
+//	Sai2Model::Sai2Model robots[4];
+//	robots[0] = robot_1;
+//	robots[1] = robot_2;
+//	robots[2] = robot_3;
+//	robots[3] = robot_4;
 
 	// prepare simulation
 	int dof = robot_1->dof();
 	VectorXd command_torques[4];
 
 	VectorXd initVel(6);
-    initVel << 0,0,0,0,0,0;
+        initVel << 0,0,0,0,0,0;
 	redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
 
 	for(int i = 0; i < 4; i++) {
 		command_torques[i] = VectorXd::Zero(dof);
 		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[i], command_torques[i]);
 	}
-	// VectorXd command_torques_ball = VectorXd::Zero(object->dof());
-	// redis_client.setEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY, command_torques_ball);
+	VectorXd command_torques_ball = VectorXd::Zero(object->dof());
+	redis_client.setEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY, command_torques_ball);
 
 	// create a timer
 	LoopTimer timer;
 	timer.initializeTimer();
 	timer.setLoopFrequency(1000); 	
-	double time_slowdown_factor = 10.0;  // adjust to higher value (i.e. 2) to slow down simulation by this factor relative to real time (for slower machines)
+	double time_slowdown_factor = 4.0;  // adjust to higher value (i.e. 2) to slow down simulation by this factor relative to real time (for slower machines)
 	bool fTimerDidSleep = true;
 	double start_time = timer.elapsedTime() / time_slowdown_factor; // secs
 	double last_time = start_time;
 
 	// init variables
-	VectorXd g1(dof);
-	VectorXd g2(dof);
-	VectorXd g3(dof);
-	VectorXd g4(dof);
+	VectorXd g(dof);
 	Eigen::Vector3d ui_force;
-	ui_force.setZero(); 
+	ui_force.setZero();
 	Eigen::VectorXd ui_force_command_torques;
 	ui_force_command_torques.setZero();
 
@@ -410,56 +399,41 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 		fTimerDidSleep = timer.waitForNextLoop();
 
 		// Set up initial velocity of ball
-		if (haveDone == false)
-		{
-			firstLoop = redis_client.getEigenMatrixJSON(FIRST_LOOP_KEY);
-			if (firstLoop(0) == 1) {
-				object->_dq(0) = -1;
-				object->_dq(1) = 2;
-				object->_dq(2) = 0;
-				object->_q(0) = 0;
-				object->_q(1) = 0;
-				object->_q(2) = 0;
-				cout << "velocity updated" << endl;
-				sim->setJointPositions(obj_name, object->_q);
-				sim->setJointVelocities(obj_name, object->_dq);
-				object->updateModel();
-				haveDone = true;
-				//redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, object->_dq);
-			}
+		firstLoop = redis_client.getEigenMatrixJSON(FIRST_LOOP_KEY);
+		if (firstLoop(0) == 1 && !haveDone) {
+			object->_dq(0) = -1;
+			object->_dq(1) = 2;
+			object->_dq(2) = 0;
+			object->_q(0) = 0;
+			object->_q(1) = 0;
+			object->_q(2) = 0;
+			object->updateModel();
+			cout << "velocity updated" << endl;
+			sim->setJointPositions(obj_name, object->_q);
+			sim->setJointVelocities(obj_name, object->_dq);
+			haveDone = true;
+			//redis_client.setEigenMatrixJSON(BALL_VELOCITIES_KEY, object->_dq);
 		}
 
-		// cout << "After ball velocity" << "\n";
+		//cout << "After ball velocity" << "\n";
 
 		// get gravity torques
-		robot_1->gravityVector(g1);
-		robot_2->gravityVector(g2);
-		robot_3->gravityVector(g3);
-		robot_4->gravityVector(g4);
+		robot_1->gravityVector(g);
+		robot_2->gravityVector(g);
+		robot_3->gravityVector(g);
+		robot_4->gravityVector(g);
 
 		// read arm torques from redis and apply to simulated robot
-// 		for(int i = 0; i < 4; i++) {
-// //			(robots[i])->gravityVector(g);
-// 			command_torques[i] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[i]);
-// 			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[i], command_torques[i]);
-// 			sim->setJointTorques(robot_names[i], command_torques[i] + g);
-// 		}
+		for(int i = 0; i < 4; i++) {
+//			(robots[i])->gravityVector(g);
 
-		command_torques[0] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[0]);
-		// redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[0], command_torques[0]);
-		sim->setJointTorques(robot_names[0], command_torques[0] + g1);
+			command_torques[i] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[i]);
+			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[i], command_torques[i]);
+			sim->setJointTorques(robot_names[i], command_torques[i] + g);
+		}
 
-		command_torques[1] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[1]);
-		sim->setJointTorques(robot_names[1], command_torques[1] + g2);
-
-		command_torques[2] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[2]);
-		sim->setJointTorques(robot_names[2], command_torques[2] + g3);
-
-		command_torques[3] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[3]);
-		sim->setJointTorques(robot_names[3], command_torques[3] + g4);
-
-		// command_torques_ball = redis_client.getEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY);
-        // sim->setJointTorques(obj_name, command_torques_ball); 
+		command_torques_ball = redis_client.getEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY);
+                sim->setJointTorques(obj_name, command_torques_ball); 
 
 //		ui_force_widget->getUIForce(ui_force);
 //		ui_force_widget->getUIJointTorques(ui_force_command_torques);

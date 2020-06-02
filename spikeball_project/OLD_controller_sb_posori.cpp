@@ -17,10 +17,7 @@ using namespace Eigen;
 bool runloop = false;
 void sighandler(int){runloop = false;}
 
-#define JOINT_CONTROLLER      0
 #define POSORI_CONTROLLER     1
-
-int state = POSORI_CONTROLLER;
 
 // helper function
 double sat(double x) {
@@ -64,8 +61,6 @@ const std::string BALL_VELOCITIES_KEY = "cs225a::robot::ball::sensors::dq";	//++
 const std::string NET_JOINT_ANGLES_KEY  = "cs225a::object::Net::sensors::q";	//+++++++++
 const std::string NET_JOINT_VELOCITIES_KEY = "cs225a::object::Net::sensors::dq";	//+++++++++
 
-const std::string ACTIVE_ROBOT = "cs225a::robot::index";	//+++++++++
-
 // - write:
 const std::string JOINT_TORQUES_COMMANDED_KEY_1  = "cs225a::robot::panda1::actuators::fgc";
 const std::string JOINT_TORQUES_COMMANDED_KEY_2  = "cs225a::robot::panda2::actuators::fgc";
@@ -81,249 +76,234 @@ const std::string JOINT_TORQUES_COMMANDED_KEYS[] = {JOINT_TORQUES_COMMANDED_KEY_
 
 int main() {
 
-    // Make sure redis-server is running at localhost with default port 6379
-    // start redis client
-    RedisClient redis_client = RedisClient();
-    redis_client.connect();
 
-    // set up signal handler
-    signal(SIGABRT, &sighandler);
+
+        // Make sure redis-server is running at localhost with default port 6379
+        // start redis client
+        RedisClient redis_client = RedisClient();
+        redis_client.connect();
+
+        // set up signal handler
+        signal(SIGABRT, &sighandler);
 	signal(SIGTERM, &sighandler);
-    signal(SIGINT, &sighandler);
+        signal(SIGINT, &sighandler);
 
-	// auto detect = new ballDetection::ballDetection();
+	//auto detect = new ballDetection::ballDetection();
 
-	// load robots, read current state and update the model
+        // load robots, read current state and update the model
+//	Sai2Model::Sai2Model robots[4];
+//	std::string JOINT_ANGLES_KEYS[] = {JOINT_ANGLES_KEY_1, JOINT_ANGLES_KEY_2,JOINT_ANGLES_KEY_3,JOINT_ANGLES_KEY_4};
+//	std::string JOINT_VELOCITIES_KEYS[] = {JOINT_VELOCITIES_KEY_1, JOINT_VELOCITIES_KEY_2,JOINT_VELOCITIES_KEY_3,JOINT_VELOCITIES_KEY_4};
+//	std::string JOINT_TORQUES_COMMAND_KEYS[] = {JOINT_TORQUES_COMMANDED_KEY_1, JOINT_TORQUES_COMMANDED_KEY_2, JOINT_TORQUES_COMMANDED_KEY_3, JOINT_TORQUES_COMMANDED_KEY_4};
+	
+	VectorXd initial_qs[4];
+//	for (int i = 0; i < 4; i++) {
+//		robots[i] = new Sai2Model::Sai2Model(robot_file, false);
+//		(robots[i])->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[i]);
+//		(robots[i])->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[i]);
+//		inital_qs[i] = (robots[i])->_q;
+//		(robots[i])->updateModel();
+//	}
+
 	auto robot_1 = new Sai2Model::Sai2Model(robot_file, false);
 	robot_1->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[0]);
 	robot_1->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[0]);
+	initial_qs[0] = robot_1->_q;
 	robot_1->updateModel();
 
 	auto robot_2 = new Sai2Model::Sai2Model(robot_file, false);
 	robot_2->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[1]);
 	robot_2->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[1]);
+	initial_qs[1] = robot_1->_q;
 	robot_2->updateModel();
 
 	auto robot_3 = new Sai2Model::Sai2Model(robot_file, false);
 	robot_3->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[2]);
 	robot_3->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[2]);
+	initial_qs[2] = robot_1->_q;
 	robot_3->updateModel();
 
 	auto robot_4 = new Sai2Model::Sai2Model(robot_file, false);
 	robot_4->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[3]);
 	robot_4->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[3]);
+	initial_qs[3] = robot_1->_q;
 	robot_4->updateModel();
 
-	// load ball	
-    auto ball = new Sai2Model::Sai2Model(ball_file, false);		//+++++++++
-    ball->_q = redis_client.getEigenMatrixJSON(BALL_ANGLES_KEY);	//+++++++++
-    ball->_dq = redis_client.getEigenMatrixJSON(BALL_VELOCITIES_KEY);	//+++++++++
-    ball->updateModel();						//+++++++++
 
-	// Random variables
+	// load ball	
+        auto ball = new Sai2Model::Sai2Model(ball_file, false);		//+++++++++
+        ball->_q = redis_client.getEigenMatrixJSON(BALL_ANGLES_KEY);	//+++++++++
+        ball->_dq = redis_client.getEigenMatrixJSON(BALL_VELOCITIES_KEY);	//+++++++++
+        ball->updateModel();						//+++++++++
+
+	//Random variables
 	bool hitObj = false;		//+++++++++
 	int numObjHit = 0;		//+++++++++
 
-    // prepare controller
-    int dof = robot_1->dof();
-    const string link_name = "link7";
-    const Vector3d pos_in_link = Vector3d(0, 0, 0.15);	//CHANGE THIS FOR OUR OWN END EFFECTOR
+        // prepare controller
+        int dof = robot_1->dof();
+        const string link_name = "link7";
+        const Vector3d pos_in_link = Vector3d(0, 0, 0.15);	//CHANGE THIS FOR OUR OWN END EFFECTOR
 	
-	// CHANGE THESSSSEEEEEEEEEE
-    const string link_name_ball = "link6";		//+++++++++
-    const Vector3d pos_in_link_ball = Vector3d(0, 0, 0);	//+++++++++
+	//CHANGE THESSSSEEEEEEEEEE
+        const string link_name_ball = "link6";		//+++++++++
+        const Vector3d pos_in_link_ball = Vector3d(0, 0, 0);	//+++++++++
 
-	// init task matrices
-    VectorXd gravity = VectorXd::Zero(dof);
+	
+        VectorXd control_torques[4]; 
+        VectorXd gravity = VectorXd::Zero(dof);
 	MatrixXd N_prec_1 = MatrixXd::Identity(dof, dof);
 	MatrixXd N_prec_2 = MatrixXd::Identity(dof, dof);
 	MatrixXd N_prec_3 = MatrixXd::Identity(dof, dof);
 	MatrixXd N_prec_4 = MatrixXd::Identity(dof, dof);
-	MatrixXd N_prec = MatrixXd::Identity(dof, dof);
 
-	// posori and joint task definitions
-	const string control_link = "link7";
-    const Vector3d control_point = Vector3d(0,0,0.07);
-	VectorXd q_init_desired(7);
-	q_init_desired << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
-	q_init_desired *= M_PI/180.0;
-
-	/***** Robot 1 *****/
 	// posori task
+	const string control_link = "link7";
+        const Vector3d control_point = Vector3d(0,0,0.07);
+	//Sai2Primitives::PosOriTask posori_tasks[4];
+	VectorXd posori_task_torques[4];
 	auto posori_task_1 =  new Sai2Primitives::PosOriTask(robot_1, control_link, control_point);
-	#ifdef USING_OTG
+	 #ifdef USING_OTG
 	posori_task_1->_use_interpolation_flag = true;
 	#else
         posori_task_1->_use_velocity_saturation_flag = false;
 	#endif
-	posori_task_1->_kp_pos = 100.0;
+	posori_task_1->_kp_pos = 200.0;
 	posori_task_1->_kv_pos = 20.0;
-	posori_task_1->_kp_ori = 100.0;
+	posori_task_1->_kp_ori = 200.0;
 	posori_task_1->_kv_ori = 20.0;
+	posori_task_1->_desired_position = initial_qs[0];
 
-	// joint task
-	auto joint_task_1 = new Sai2Primitives::JointTask(robot_1);
-	#ifdef USING_OTG
-		joint_task_1->_use_interpolation_flag = true;
-	#else
-		joint_task_1->_use_velocity_saturation_flag = true;
-	#endif
-	joint_task_1->_kp = 25.0;
-	joint_task_1->_kv = 10.0;
-	joint_task_1->_desired_position = q_init_desired;
-
-	/***** Robot 2 *****/
-	// posori task
 	auto posori_task_2 =  new Sai2Primitives::PosOriTask(robot_2, control_link, control_point);
 	 #ifdef USING_OTG
 	posori_task_2->_use_interpolation_flag = true;
 	#else
         posori_task_2->_use_velocity_saturation_flag = false;
 	#endif
-	posori_task_2->_kp_pos = 100.0;
+	posori_task_2->_kp_pos = 200.0;
 	posori_task_2->_kv_pos = 20.0;
-	posori_task_2->_kp_ori = 100.0;
+	posori_task_2->_kp_ori = 200.0;
 	posori_task_2->_kv_ori = 20.0;
+	posori_task_2->_desired_position = initial_qs[1];
 
-	// joint task
-	auto joint_task_2 = new Sai2Primitives::JointTask(robot_2);
-	#ifdef USING_OTG
-		joint_task_2->_use_interpolation_flag = true;
-	#else
-		joint_task_2->_use_velocity_saturation_flag = true;
-	#endif
-	joint_task_2->_kp = 25.0;
-	joint_task_2->_kv = 10.0;
-	joint_task_2->_desired_position = q_init_desired;
-
-	/***** Robot 3 *****/
-	// posori task
 	auto posori_task_3 =  new Sai2Primitives::PosOriTask(robot_3, control_link, control_point);
 	 #ifdef USING_OTG
 	posori_task_3->_use_interpolation_flag = true;
 	#else
         posori_task_3->_use_velocity_saturation_flag = false;
 	#endif
-	posori_task_3->_kp_pos = 100.0;
+	posori_task_3->_kp_pos = 200.0;
 	posori_task_3->_kv_pos = 20.0;
-	posori_task_3->_kp_ori = 100.0;
+	posori_task_3->_kp_ori = 200.0;
 	posori_task_3->_kv_ori = 20.0;
+	posori_task_3->_desired_position = initial_qs[2];
 
-	// joint task
-	auto joint_task_3 = new Sai2Primitives::JointTask(robot_3);
-	#ifdef USING_OTG
-		joint_task_3->_use_interpolation_flag = true;
-	#else
-		joint_task_3->_use_velocity_saturation_flag = true;
-	#endif
-	joint_task_3->_kp = 25.0;
-	joint_task_3->_kv = 10.0;
-	joint_task_3->_desired_position = q_init_desired;
-
-	/***** Robot 4 *****/
-	// posori task
 	auto posori_task_4 =  new Sai2Primitives::PosOriTask(robot_4, control_link, control_point);
 	 #ifdef USING_OTG
 	posori_task_4->_use_interpolation_flag = true;
 	#else
         posori_task_4->_use_velocity_saturation_flag = false;
 	#endif
-	posori_task_4->_kp_pos = 100.0;
+	posori_task_4->_kp_pos = 200.0;
 	posori_task_4->_kv_pos = 20.0;
-	posori_task_4->_kp_ori = 100.0;
+	posori_task_4->_kp_ori = 200.0;
 	posori_task_4->_kv_ori = 20.0;
+	posori_task_4->_desired_position = initial_qs[3];
 
-	// joint task
-	auto joint_task_4 = new Sai2Primitives::JointTask(robot_4);
-	#ifdef USING_OTG
-		joint_task_4->_use_interpolation_flag = true;
-	#else
-		joint_task_4->_use_velocity_saturation_flag = true;
-	#endif
-	joint_task_4->_kp = 25.0;
-	joint_task_4->_kv = 10.0;
-	joint_task_4->_desired_position = q_init_desired;
 
-	// init torque containers
-	VectorXd posori_task_torques[4];
-	VectorXd joint_task_torques[4];
-	VectorXd control_torques[4];	
 	for (int i = 0; i < 4; i++) {
+//		posori_tasks[i] =  new Sai2Primitives::PosOriTask(robots[i], control_link, control_point);
+//		 #ifdef USING_OTG
+//        	posori_tasks[i]->_use_interpolation_flag = true;
+//		#else
+//	        posori_tasks[i]->_use_velocity_saturation_flag = true;
+//		#endif
 		posori_task_torques[i] = VectorXd::Zero(dof);
-		joint_task_torques[i] = VectorXd::Zero(dof);
+//        	posori_tasks[i]->_kp_pos = 25.0;
+//        	posori_tasks[i]->_kv_pos = 10.0;
+//	       	posori_tasks[i]->_kp_ori = 10.0;
+//        	posori_tasks[i]->_kv_ori = 5.0;
+//		posori_tasks[i]->_desired_position = initial_qs[i];
 		control_torques[i] = VectorXd::Zero(dof);
 	}
-
-   	redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[0], control_torques[0]);
-   	redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[1], control_torques[1]);
-   	redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[2], control_torques[2]);
-   	redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[3], control_torques[3]);
 	
-	// init control variables 
 	Vector3d x_ball, x_vel_ball, x_pred;
-	Vector3d xs[4], xs_des[4], xs_init[4];
-	Matrix3d Rs[4], Rs_des[4], Rs_init[4];
+	Vector3d xs[4], xs_des[4];
+	Matrix3d Rs[4], Rs_des[4];
 
 	Matrix3d R_pred;
-	VectorXd output(4);
-	int controlled_robot = 0;  // index of robot to control
-	redis_client.set(ACTIVE_ROBOT, "0");
 
-    // create a loop timer
-    double control_freq = 1000;
-    LoopTimer timer;
-    timer.setLoopFrequency(control_freq);   // 1 KHz
-    double last_time = timer.elapsedTime(); //secs
-    bool fTimerDidSleep = true;
-    timer.initializeTimer(1000000); // 1 ms pause before starting loop
-    unsigned long long counter = 0;
-    runloop = true;
+	VectorXd output(4);
+
+        // create a loop timer
+        double control_freq = 1000;
+        LoopTimer timer;
+        timer.setLoopFrequency(control_freq);   // 1 KHz
+        double last_time = timer.elapsedTime(); //secs
+        bool fTimerDidSleep = true;
+        timer.initializeTimer(1000000); // 1 ms pause before starting loop
+
+        unsigned long long counter = 0;
+
+        runloop = true;
 
 	// Initialize ball velocity
-	// Variables to initialize ball velocity 
+	//Variables to initialize ball velocity 
 	VectorXd initVel(6);
-    initVel << 1, 1, 1, 1, 1, 1;
+        initVel << 1, 1, 1, 1, 1, 1;
 	Vector3d prevPred;
 	prevPred << 0,0,0;
 
-	while (runloop) {
-        fTimerDidSleep = timer.waitForNextLoop();
+while (runloop)
+        {
+                fTimerDidSleep = timer.waitForNextLoop();
                 
 		if (counter < 100) {
-            redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
-    		robot_1->positionInWorld(xs_init[0], link_name, pos_in_link);
-			robot_1->rotationInWorld(Rs_init[0], link_name);
-    		robot_2->positionInWorld(xs_init[1], link_name, pos_in_link);
-			robot_2->rotationInWorld(Rs_init[1], link_name);
-    		robot_3->positionInWorld(xs_init[2], link_name, pos_in_link);
-			robot_3->rotationInWorld(Rs_init[2], link_name);
-    		robot_4->positionInWorld(xs_init[3], link_name, pos_in_link);
-			robot_4->rotationInWorld(Rs_init[3], link_name);
-            counter++;
+                        redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
+                        control_torques[0].setZero();
+                        redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[0], control_torques[0]);
+                        control_torques[1].setZero();
+                        redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[1], control_torques[1]);
+                        control_torques[2].setZero();
+                        redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[2], control_torques[2]);
+                        control_torques[3].setZero();
+                        redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[3], control_torques[3]);
+                        counter++;
 			continue;
-        } 
+                } else {
+                        initVel << 0,0,0,0,0,0;
+                        redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
+                }
 
-        // update robots
-    	robot_1->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[0]);
-    	robot_1->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[0]);
+                // read robot state from redis
+//		for (int i = 0; i < 4; i++) {
+//                	robots[i]->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[i]);
+//                	robots[i]->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[i]);
+//			robots[i]->updateModel();
+//			robots[i]->position(xs[i], link_name, pos_in_link);
+//			robots[i]->rotation(Rs[i], link_name);
+//		}
+
+        	robot_1->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[0]);
+        	robot_1->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[0]);
 		robot_1->updateModel();
 		robot_1->position(xs[0], link_name, pos_in_link);
 		robot_1->rotation(Rs[0], link_name);
 
-    	robot_2->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[1]);
-    	robot_2->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[1]);
+        	robot_2->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[1]);
+        	robot_2->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[1]);
 		robot_2->updateModel();
 		robot_2->position(xs[1], link_name, pos_in_link);
 		robot_2->rotation(Rs[1], link_name);
 
-    	robot_3->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[2]);
-    	robot_3->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[2]);
+        	robot_3->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[2]);
+        	robot_3->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[2]);
 		robot_3->updateModel();
 		robot_3->position(xs[2], link_name, pos_in_link);
 		robot_3->rotation(Rs[2], link_name);
 
-    	robot_4->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[3]);
-    	robot_4->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[3]);
+        	robot_4->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[3]);
+        	robot_4->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[3]);
 		robot_4->updateModel();
 		robot_4->position(xs[3], link_name, pos_in_link);
 		robot_4->rotation(Rs[3], link_name);
@@ -332,12 +312,15 @@ int main() {
 		ball->_dq = redis_client.getEigenMatrixJSON(BALL_VELOCITIES_KEY);	 //+++++++++
 		ball->updateModel();		 //+++++++++
 
-		// Ball
-        // ball->positionInWorld(x_ball, link_name_ball, pos_in_link_ball);	//+++++++++
-        // ball->linearVelocityInWorld(x_vel_ball, link_name_ball, pos_in_link_ball);	//+++++++++
+		
 
-		// x_ball[1] = x_ball[1] -1;
-		// x_ball[2] = x_ball[2] + 1;
+
+		//Ball
+                ball->positionInWorld(x_ball, link_name_ball, pos_in_link_ball);	//+++++++++
+                ball->linearVelocityInWorld(x_vel_ball, link_name_ball, pos_in_link_ball);	//+++++++++
+
+		x_ball[1] = x_ball[1] -1;
+		x_ball[2] = x_ball[2] + 1;
 
 		///////////////////////////////
 		// FINDING X DESIRED!!!!!
@@ -347,26 +330,26 @@ int main() {
 		
 		// Kalman Filter to get prediction of next position and velocity
 
-		// MatrixXd centerPos(4,3);
-		// centerPos << 	0, 1.3, 0,
-		// 		1.3, 0, 0,
-		// 		0, -1.3, 0,
-		// 		-1.3, 0, 0;
+		MatrixXd centerPos(4,3);
+		centerPos << 	0, 1.3, 0,
+				1.3, 0, 0,
+				0, -1.3, 0,
+				-1.3, 0, 0;
 		
 		// Find end effector position
-		// double r = 1.3;
-		// Vector3d targetPos;
-		// targetPos << 0,0,0;
-		// output = getPrediction(x_ball, x_vel_ball, targetPos, r, centerPos, prevPred);
-		// int robot_des = output(3);
-		// x_pred << output(0), output(1), output(2);
+		double r = 1.3;
+		Vector3d targetPos;
+		targetPos << 0,0,0;
+		output = getPrediction(x_ball, x_vel_ball, targetPos, r, centerPos, prevPred);
+		int robot_des = output(3);
+		x_pred << output(0), output(1), output(2);
 		
-		// if (x_pred(0) == 0 && x_pred(1) == 0 && x_pred(2)) x_pred = prevPred; 
-		// R_pred = getOrientationPrediction(x_ball, x_vel_ball, targetPos, r, x_pred);
+		if (x_pred(0) == 0 && x_pred(1) == 0 && x_pred(2)) x_pred = prevPred; 
+		R_pred = getOrientationPrediction(x_ball, x_vel_ball, targetPos, r, x_pred);
 
 		//cout << "PRED: x: " << x_pred[0] << ", y: " << x_pred[1] << ", z: " << x_pred[2] << "\n";
-		// cout << "BALL: x: " << x_ball[0] << ", y: " << x_ball[1] << ", z: " << x_ball[2] << "\n";
-		// cout << "\n";
+		cout << "BALL: x: " << x_ball[0] << ", y: " << x_ball[1] << ", z: " << x_ball[2] << "\n";
+		cout << "\n";
 		// Find what robot's joint space its in
 		//int robot_des = getRobot(x_pred);
 
@@ -389,147 +372,78 @@ int main() {
 			Rs_des[3] = R_pred;
 		}*/
 
-		// for (int i = 0; i < 4; i++ ) {
-		// 	//if (i != robot_des) {
-		// 		//xs_des[i] = xs[i];
-		// 		xs_des[i]= xs[i];
-		// 		Rs_des[i] = Rs[i];
-		// 	//}
-		// }
+		for (int i = 0; i < 4; i++ ) {
+			//if (i != robot_des) {
+				//xs_des[i] = xs[i];
+				xs_des[i]= xs[i];
+				Rs_des[i] = Rs[i];
+			//}
+		}
 
-		// if(state == JOINT_CONTROLLER)
-		// {
-		// 	// update task model and set hierarchy
-		// 	N_prec_1.setIdentity();
-		// 	joint_task->updateTaskModel(N_prec_1);
-
-		// 	// compute torques
-		// 	joint_task->computeTorques(joint_task_torques);
-
-		// 	control_torques[0] = joint_task_torques;
-
-		// 	if( (robot_1->_q - q_init_desired).norm() < 0.15 )
-		// 	{
-		// 		posori_task_1->reInitializeTask();
-		// 		posori_task_1->_desired_position += Vector3d(-0.1,0.1,0.1);
-		// 		posori_task_1->_desired_orientation = AngleAxisd(M_PI/6, Vector3d::UnitX()).toRotationMatrix() * posori_task_1->_desired_orientation;
-
-		// 		joint_task->reInitializeTask();
-		// 		joint_task->_kp = 0;
-
-		//     		robot_1->positionInWorld(xs[0], link_name, pos_in_link);
-		// 		robot_1->rotationInWorld(Rs[0], link_name);
-
-		// 		state = POSORI_CONTROLLER;
-		// 	}
-		// }
-
-		// else if(state == POSORI_CONTROLLER)
-		// {
-
-		// Change these values based on prediction algorithm output
-		controlled_robot = stoi(redis_client.get(ACTIVE_ROBOT));
-		// controlled_robot = 3;
-		Vector3d x_off;
-		x_off << -0.1, -0.6, 0;
-		xs_des[controlled_robot] = xs_init[controlled_robot] + x_off;
-		Rs_des[controlled_robot] = Rs_init[controlled_robot];
 		
-		// Control only the specified robot by controlled_robot, which is output from the prediction algorithm
-		if (controlled_robot == 0) {
-			posori_task_1->reInitializeTask();
-			posori_task_1->_desired_position = xs_des[0];
-			posori_task_1->_desired_orientation = Rs_des[0];
-			N_prec_1.setIdentity();
-			posori_task_1->updateTaskModel(N_prec_1);
-			posori_task_1->computeTorques(posori_task_torques[0]);
+		/////////////////////////////////
 
-			// update task model and set hierarchy
-			N_prec = posori_task_1->_N;
-			joint_task_1->updateTaskModel(N_prec);
-			joint_task_1->computeTorques(joint_task_torques[0]);
-			control_torques[0] = posori_task_torques[0] + joint_task_torques[0];
-			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[0], control_torques[0]);
-		}
-		else if (controlled_robot == 1) {
-			posori_task_2->reInitializeTask();
-			posori_task_2->_desired_position = xs_des[1];
-			posori_task_2->_desired_orientation = Rs_des[1];
-			N_prec_2.setIdentity();
-			posori_task_2->updateTaskModel(N_prec_2);
-			posori_task_2->computeTorques(posori_task_torques[1]);
+		posori_task_1->reInitializeTask();
+		posori_task_1->_desired_position = xs_des[0];
+		posori_task_1->_desired_orientation = Rs_des[0];
+		N_prec_1.setIdentity();
+		posori_task_1->updateTaskModel(N_prec_1);
+		posori_task_1->computeTorques(posori_task_torques[0]);
 
-			// update task model and set hierarchy
-			N_prec = posori_task_2->_N;
-			joint_task_2->updateTaskModel(N_prec);
-			joint_task_2->computeTorques(joint_task_torques[1]);
-			control_torques[1] = posori_task_torques[1] + joint_task_torques[1];
-			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[1], posori_task_torques[1]);
-		}
-		else if (controlled_robot == 2) {
-			posori_task_3->reInitializeTask();
-			posori_task_3->_desired_position = xs_des[2];
-			posori_task_3->_desired_orientation = Rs_des[2];
-			N_prec_3.setIdentity();
-			posori_task_3->updateTaskModel(N_prec_3);
-			posori_task_3->computeTorques(posori_task_torques[2]);
+		posori_task_2->reInitializeTask();
+		posori_task_2->_desired_position = xs_des[1];
+		posori_task_2->_desired_orientation = Rs_des[1];
+		N_prec_2.setIdentity();
+		posori_task_2->updateTaskModel(N_prec_2);
+		posori_task_2->computeTorques(posori_task_torques[1]);
+		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[1], posori_task_torques[1]);
 
-			// update task model and set hierarchy
-			N_prec = posori_task_3->_N;
-			joint_task_3->updateTaskModel(N_prec);
-			joint_task_3->computeTorques(joint_task_torques[2]);
-			control_torques[2] = posori_task_torques[2] + joint_task_torques[2];
-			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[2], posori_task_torques[2]);
-		}
-		else if (controlled_robot == 3) {
-			posori_task_4->reInitializeTask();
-			posori_task_4->_desired_position = xs_des[3];
-			posori_task_4->_desired_orientation = Rs_des[3];
-			N_prec_4.setIdentity();
-			posori_task_4->updateTaskModel(N_prec_4);
-			posori_task_4->computeTorques(posori_task_torques[3]);
+		posori_task_3->reInitializeTask();
+		posori_task_3->_desired_position = xs_des[2];
+		posori_task_3->_desired_orientation = Rs_des[2];
+		N_prec_3.setIdentity();
+		posori_task_3->updateTaskModel(N_prec_3);
+		posori_task_3->computeTorques(posori_task_torques[2]);
+		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[2], posori_task_torques[2]);
 
-			// update task model and set hierarchy
-			N_prec = posori_task_4->_N;
-			joint_task_4->updateTaskModel(N_prec);
-			joint_task_4->computeTorques(joint_task_torques[3]);
-			control_torques[3] = posori_task_torques[3] + joint_task_torques[3];
-			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[3], posori_task_torques[3]);
-		}
+		posori_task_4->reInitializeTask();
+		posori_task_4->_desired_position = xs_des[3];
+		posori_task_4->_desired_orientation = Rs_des[3];
+		N_prec_4.setIdentity();
+		posori_task_4->updateTaskModel(N_prec_4);
+		posori_task_4->computeTorques(posori_task_torques[3]);
+		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[3], posori_task_torques[3]);
 
 
 		// Update task model and compute torques
 //		for (int i = 0; i < 4; i++) {
 //			control_torques[i] = posori_task_torques[i];
 //		}
-		// cout << "x desired 2:\n" << xs_des[1] << "\n 3: \n" << xs_des[3] << "\n" << "\n";
-		// cout << "Rotation Matrices 2:\n" << Rs[1] << "\n 3: \n" << Rs[3] << "\n" << "\n";
+		cout << "x desired 2:\n" << xs_des[1] << "\n 3: \n" << xs_des[3] << "\n" << "\n";
+		cout << "Rotation Matrices 2:\n" << Rs[1] << "\n 3: \n" << Rs[3] << "\n" << "\n";
 		
 		//cout << "Rotation Desired 1: \n" << Rs_des[0] << "\n 3: \n " << Rs_des[3] << "\n" << "\n";
-		// cout << "Control Torques 1: " << posori_task_torques[1] << "\n 3: " << posori_task_torques[3] << "\n";		
+		cout << "Control Torques 1: " << posori_task_torques[1] << "\n 3: " << posori_task_torques[3] << "\n";		
 		
 		// Send to redis
 //		for (int i = 0; i < 4; i++) {
 //			 redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[i], control_torques[i]);
 //		}
-		
-		 counter++;
-        } // end loop
+        }
 	
-	// for (int i = 0; i < 4; i++) {
- //        	control_torques[i].setZero();
- // 	       	redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[i], control_torques[i]);
-	// }
-	control_torques[0].setZero();
-   	redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[0], control_torques[0]);
+	for (int i = 0; i < 4; i++) {
+        	control_torques[i].setZero();
+ 	       	redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[i], control_torques[i]);
+	}
 	initVel << 0,0,0,0,0,0;
-    redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
+        redis_client.setEigenMatrixJSON(FIRST_LOOP_KEY, initVel);
 
-    double end_time = timer.elapsedTime();
+        double end_time = timer.elapsedTime();
     std::cout << "\n";
     std::cout << "Control Loop run time  : " << end_time << " seconds\n";
     std::cout << "Control Loop updates   : " << timer.elapsedCycles() << "\n";
     std::cout << "Control Loop frequency : " << timer.elapsedCycles()/end_time << "Hz\n";
+
 
     return 0;
 }
