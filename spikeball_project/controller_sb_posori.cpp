@@ -34,7 +34,7 @@ double sat(double x) {
 
 // ball detection functions
 Vector3d getNoisyPosition(Vector3d posInWorld);
-int getRobot(Vector3d endPos);
+int getRobot(Vector3d& x_vel_ball, bool& sameTeam, int robotDes);
 VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos, Vector3d prevPred);
 MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, Vector3d endPos);
 
@@ -156,10 +156,10 @@ int main() {
 	auto posori_task_1 =  new Sai2Primitives::PosOriTask(robot_1, control_link, control_point);
 	#ifdef USING_OTG
 	posori_task_1->_use_interpolation_flag = true;
-//	#else
-//        posori_task_1->_use_velocity_saturation_flag = false;
+	#else
+        posori_task_1->_use_velocity_saturation_flag = false;
 	#endif
-    posori_task_1->_use_velocity_saturation_flag = false;
+    //posori_task_1->_use_velocity_saturation_flag = false;
 	posori_task_1->_kp_pos = 100.0;
 	posori_task_1->_kv_pos = 20.0;
 	posori_task_1->_kp_ori = 100.0;
@@ -341,99 +341,13 @@ int main() {
 		ball->updateModel();		 //+++++++++
 
 		// Ball
-        // ball->positionInWorld(x_ball, link_name_ball, pos_in_link_ball);	//+++++++++
-        // ball->linearVelocityInWorld(x_vel_ball, link_name_ball, pos_in_link_ball);	//+++++++++
+        ball->positionInWorld(x_ball, link_name_ball, pos_in_link_ball);	//+++++++++
+        ball->linearVelocityInWorld(x_vel_ball, link_name_ball, pos_in_link_ball);	//+++++++++
 
-		// x_ball[1] = x_ball[1] -1;
-		// x_ball[2] = x_ball[2] + 1;
+		x_ball[0] = x_ball[0] - .6;
+		x_ball[1] = x_ball[1] - .6;
+		x_ball[2] = x_ball[2] + 1;
 
-		///////////////////////////////
-		// FINDING X DESIRED!!!!!
-
-		//Get noisy position
-		//x_ball = getNoisyPosition(x_ball);	// can just comment this out for no noise
-		
-		// Kalman Filter to get prediction of next position and velocity
-
-		// MatrixXd centerPos(4,3);
-		// centerPos << 	0, 1.3, 0,
-		// 		1.3, 0, 0,
-		// 		0, -1.3, 0,
-		// 		-1.3, 0, 0;
-		
-		// Find end effector position
-		// double r = 1.3;
-		// Vector3d targetPos;
-		// targetPos << 0,0,0;
-		// output = getPrediction(x_ball, x_vel_ball, targetPos, r, centerPos, prevPred);
-		// int robot_des = output(3);
-		// x_pred << output(0), output(1), output(2);
-		
-		// if (x_pred(0) == 0 && x_pred(1) == 0 && x_pred(2)) x_pred = prevPred; 
-		// R_pred = getOrientationPrediction(x_ball, x_vel_ball, targetPos, r, x_pred);
-
-		//cout << "PRED: x: " << x_pred[0] << ", y: " << x_pred[1] << ", z: " << x_pred[2] << "\n";
-		// cout << "BALL: x: " << x_ball[0] << ", y: " << x_ball[1] << ", z: " << x_ball[2] << "\n";
-		// cout << "\n";
-		// Find what robot's joint space its in
-		//int robot_des = getRobot(x_pred);
-
-		
-		// Change x_des depending on which robot will hit it
-		/*if (robot_des == 0) {
-			
-			xs_des[0] << x_pred(0), x_pred(1) -1.3, x_pred(2);
-			Rs_des[0] = R_pred;
-
-		} else if  (robot_des == 1) {
-			xs_des[1] << x_pred(0) -1.3, x_pred(1), x_pred(2);
-			Rs_des[1] = R_pred;
-
-		} else if  (robot_des == 2) {
-			xs_des[2] << x_pred(0), x_pred(1) +1.3, x_pred(2);
-			Rs_des[2] = R_pred;
-		} else if  (robot_des == 3) {
-			xs_des[3] << x_pred(0) +1.3, x_pred(1), x_pred(2);
-			Rs_des[3] = R_pred;
-		}*/
-
-		// for (int i = 0; i < 4; i++ ) {
-		// 	//if (i != robot_des) {
-		// 		//xs_des[i] = xs[i];
-		// 		xs_des[i]= xs[i];
-		// 		Rs_des[i] = Rs[i];
-		// 	//}
-		// }
-
-		// if(state == JOINT_CONTROLLER)
-		// {
-		// 	// update task model and set hierarchy
-		// 	N_prec_1.setIdentity();
-		// 	joint_task->updateTaskModel(N_prec_1);
-
-		// 	// compute torques
-		// 	joint_task->computeTorques(joint_task_torques);
-
-		// 	control_torques[0] = joint_task_torques;
-
-		// 	if( (robot_1->_q - q_init_desired).norm() < 0.15 )
-		// 	{
-		// 		posori_task_1->reInitializeTask();
-		// 		posori_task_1->_desired_position += Vector3d(-0.1,0.1,0.1);
-		// 		posori_task_1->_desired_orientation = AngleAxisd(M_PI/6, Vector3d::UnitX()).toRotationMatrix() * posori_task_1->_desired_orientation;
-
-		// 		joint_task->reInitializeTask();
-		// 		joint_task->_kp = 0;
-
-		//     		robot_1->positionInWorld(xs[0], link_name, pos_in_link);
-		// 		robot_1->rotationInWorld(Rs[0], link_name);
-
-		// 		state = POSORI_CONTROLLER;
-		// 	}
-		// }
-
-		// else if(state == POSORI_CONTROLLER)
-		// {
 
 		// Change these values based on prediction algorithm output
 		controlled_robot = stoi(redis_client.get(ACTIVE_ROBOT));
@@ -562,46 +476,6 @@ Vector3d getNoisyPosition(Vector3d posInWorld) {
 
     return pos;
 }
-
-int getRobot(Vector3d endPos) {
-    int botNum = 0;
-    Vector3d start;
-    start << 0,0,0;
-    Vector3d robot1org;
-    robot1org << 0,1.3,0;
-    Vector3d robot2org;
-    robot2org << 1.3,0,0;
-    Vector3d robot3org;
-    robot3org << 0,-1.3,0;
-    Vector3d robot4org;
-    robot4org<< -1.3,0,0;
-    double dist1 = 0;
-    double dist2 = 0;
-    double dist3 = 0;
-    double dist4 = 0;
-    if (endPos == start) {
-        return 0;
-    } else {
-        for (int i=0; i<3; i++) {
-            dist1 = dist1 + ((endPos[i]-robot1org[i])*(endPos[i]-robot1org[i]));
-            dist2 = dist2 + ((endPos[i]-robot2org[i])*(endPos[i]-robot2org[i]));
-            dist3 = dist3 + ((endPos[i]-robot3org[i])*(endPos[i]-robot3org[i]));
-            dist4 = dist4 + ((endPos[i]-robot4org[i])*(endPos[i]-robot4org[i]));
-        }
-        if (dist1 > dist2 && dist1 > dist3 && dist1 > dist4) {
-            botNum = 1;
-        } else if (dist2 > dist1 && dist2 > dist3 && dist2 > dist4) {
-            botNum = 2;
-        } else if (dist3 > dist1 && dist3 > dist2 && dist3 > dist4) {
-            botNum = 3;
-        } else {
-            botNum = 4;
-        }
-        return botNum;
-    }
-}
-
-
 
 /*Aubrey
 * Returns the predicted end position of the ball given a position and velocity of the ball's trajectory
@@ -759,3 +633,32 @@ VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
      
 }
 
+int getRobot(Vector3d& x_vel_ball, bool& sameTeam, int robotDes) {
+    /* must initialize robotDes = 0 outside this function
+     for the first move of initializing the ball sameTeam = false, goes into if statement
+     to assign a value for robotDes. Then it always keeps track of who has the ball. 
+     */
+     int returnRobot;
+    if (sameTeam == false) {
+        if (x_vel_ball[0] > 0 && x_vel_ball[1] > 0) {
+            returnRobot = 1;
+        } else if (x_vel_ball[0] > 0 && x_vel_ball[1] <= 0) {
+            returnRobot = 4;
+        } else if (x_vel_ball[0] <= 0 && x_vel_ball[1] > 0) {
+            returnRobot = 2;
+        } else {
+            returnRobot = 3;
+        }
+    } else {
+        if (robotDes == 1) {
+            returnRobot = 4;
+        } else if (robotDes == 4) {
+            returnRobot = 1;
+        } else if (robotDes == 2) {
+            returnRobot == 3;
+        } else {
+            returnRobot == 2;
+        }
+    }
+    return returnRobot;
+}
