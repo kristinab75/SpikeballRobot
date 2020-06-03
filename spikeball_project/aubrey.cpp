@@ -2,38 +2,41 @@
 using namespace Eigen;
 
 VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, Vector3d centerPos) {
+    
+    /* Function Inputs */
     // initPos      - [x,y,z] initial position
     // initVel      - [vx, vy, vz] initial velocity
     // targetPos    - [x,y,z] desired final position
     // r            - reachable radius around a robot
-    // centerPos    - [x,y,z] matrix of robot positions
+    // centerPos    - [x,y,z] robot positions
+    
+    /* Function Outputs */
+    // endPos       - [x,y,z] desired position of end effector; if unreachable, returns [0,0,0]
+    
 
     double g = 9.81;
-    int numRobots = 4;
-    int robotHit = -1;
     double x1 = 0;
     double y1 = 0;
     VectorXd endPos = VectorXd::Zero(3);
 
+    // handles singuality when traveling vertically
     if (initVel(0) == 0) {
+        initVel(0) << 0.01; //assigns some epsilon velocity to handle singularity
+    }
+    
+    double M = initVel(1) / initVel(0);    // XY slope of trajectory
+    double B = initPos(1) - initPos(0)*M; // Y intercept
+    double a = centerPos(0);
+    double b = centerPos(1);
+
+    // check for real solutions
+    double solutionCheck = pow(r,2)*(1+pow(M,2)) - pow((b - M*a - B),2);
+    
+    if (solutionCheck <= 0) {
         endPos << 0,0,0;
-        return endPos;
-        
     } else {
-
-        double M = initVel(1) / initVel(0);    // XY slope of trajectory
-        double B = initPos(1) - initPos(0)*M; // Y intercept
-        double a = centerPos(0);
-        double b = centerPos(1);
-
-        // check for real solutions
-        double solutionCheck = pow(r,2)*(1+pow(M,2)) - pow((b - M*a - B),2);
-        if (solutionCheck <= 0) {
-            endPos << 0,0,0;
-            return endPos;
-        }
-
-        // candidate x values
+        
+        // calculates candidate x intersection
         double x1_1 = ((a + b*M - B*M) - sqrt(-(pow(a,2))*(pow(M,2)) + 2*a*b*M - 2*a*B*M - (pow(b,2)) + 2*b*B - (pow(B,2)) + (pow(M,2)) * (pow(r,2)) + (pow(r,2))) )   /  (pow(M,2) + 1);
         double x1_2 = ((a + b*M - B*M) + sqrt(-(pow(a,2))*(pow(M,2)) + 2*a*b*M - 2*a*B*M - (pow(b,2)) + 2*b*B - (pow(B,2)) + (pow(M,2)) * (pow(r,2)) + (pow(r,2))) )   /  (pow(M,2) + 1);
 
@@ -48,10 +51,10 @@ VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
             y1 = M*(x1_2) + B;
         }
 
-        double t1 = (x1 - initPos(0)) / initVel(0);
-        double z1 = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2);
+        double t1 = (x1 - initPos(0)) / initVel(0); // [s] time to impact
+        double z1 = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2); // [m] z intercept point
 
-        if (z1 < 0) {
+        if (z1 < 0) { // if reachable position
             endPos << 0,0,0;
         } else {
             endPos << x1,y1,z1;
