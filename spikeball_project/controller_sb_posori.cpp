@@ -432,13 +432,14 @@ int main() {
 			//x_pred = getPrediction();
 			//xs_des[robot_des] = x_pred;
 			//Rs_des[robot_des] = getOrientation();
-			controlled_robot = 3; //robot_des;
+			//controlled_robot = 3; //robot_des;
 		} else {
 			controlled_robot = -1;
 		}
 
 		// Change these values based on prediction algorithm output
 		//controlled_robot = stoi(redis_client.get(ACTIVE_ROBOT));
+		controlled_robot = 0;
 		Vector3d x_off;
 		x_off << -.21, -0.32, 0.59;
 		xs_des[controlled_robot] = x_off; //xs_init[controlled_robot] + x_off;
