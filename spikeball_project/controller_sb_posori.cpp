@@ -160,14 +160,14 @@ int main() {
 	posori_task_1->_use_velocity_saturation_flag = false;
 #endif
 	posori_task_1->_use_velocity_saturation_flag = false;
-	posori_task_1->_kp_pos = 100.0;
-	posori_task_1->_kv_pos = 20.0;
-	posori_task_1->_kp_ori = 100.0;
-	posori_task_1->_kv_ori = 20.0;
-	posori_task_1->_desired_velocity << 10, 10, 10;
-	posori_task_1->_desired_angular_velocity << 10*M_PI, 10*M_PI, 10*M_PI;
-	posori_task_1->_desired_acceleration << 10, 10, 10;
-	posori_task_1->_desired_angular_acceleration << 10*M_PI, 10*M_PI, 10*M_PI;
+	posori_task_1->_kp_pos = 1000.0;
+	posori_task_1->_kv_pos = 200.0;
+	posori_task_1->_kp_ori = 1000.0;
+	posori_task_1->_kv_ori = 200.0;
+	//posori_task_1->_desired_velocity << 10, 10, 10;
+	//posori_task_1->_desired_angular_velocity << 10, 10, 10;
+	//posori_task_1->_desired_acceleration << 10, 10, 10;
+	//posori_task_1->_desired_angular_acceleration << 10, 10, 10;
 
 	// joint task
 	auto joint_task_1 = new Sai2Primitives::JointTask(robot_1);
@@ -176,8 +176,8 @@ int main() {
 #else
 	joint_task_1->_use_velocity_saturation_flag = true;
 #endif
-	joint_task_1->_kp = 50.0;
-	joint_task_1->_kv = 20.0;
+	joint_task_1->_kp = 100.0;
+	joint_task_1->_kv = 40.0;
 	joint_task_1->_desired_position = q_init_desired;
 
 	/***** Robot 2 *****/
@@ -188,10 +188,14 @@ int main() {
 #else
 	posori_task_2->_use_velocity_saturation_flag = false;
 #endif
-	posori_task_2->_kp_pos = 100.0;
-	posori_task_2->_kv_pos = 20.0;
-	posori_task_2->_kp_ori = 100.0;
-	posori_task_2->_kv_ori = 20.0;
+	posori_task_2->_kp_pos = 200.0;
+	posori_task_2->_kv_pos = 40.0;
+	posori_task_2->_kp_ori = 200.0;
+	posori_task_2->_kv_ori = 40.0;
+	//posori_task_2->_desired_velocity << 10, 10, 10;
+	//posori_task_2->_desired_angular_velocity << 10, 10, 10;
+	//posori_task_2->_desired_acceleration << 10, 10, 10;
+	//posori_task_2->_desired_angular_acceleration << 10, 10, 10;
 
 	// joint task
 	auto joint_task_2 = new Sai2Primitives::JointTask(robot_2);
@@ -200,8 +204,8 @@ int main() {
 #else
 	joint_task_2->_use_velocity_saturation_flag = true;
 #endif
-	joint_task_2->_kp = 25.0;
-	joint_task_2->_kv = 10.0;
+	joint_task_2->_kp = 100.0;
+	joint_task_2->_kv = 40.0;
 	joint_task_2->_desired_position = q_init_desired;
 
 	/***** Robot 3 *****/
@@ -212,10 +216,14 @@ int main() {
 #else
 	posori_task_3->_use_velocity_saturation_flag = false;
 #endif
-	posori_task_3->_kp_pos = 100.0;
-	posori_task_3->_kv_pos = 20.0;
-	posori_task_3->_kp_ori = 100.0;
-	posori_task_3->_kv_ori = 20.0;
+	posori_task_3->_kp_pos = 200.0;
+	posori_task_3->_kv_pos = 40.0;
+	posori_task_3->_kp_ori = 200.0;
+	posori_task_3->_kv_ori = 40.0;
+	//posori_task_3->_desired_velocity << 10, 10, 10;
+	//posori_task_3->_desired_angular_velocity << 10, 10, 10;
+	//posori_task_3->_desired_acceleration << 10, 10, 10;
+	//posori_task_3->_desired_angular_acceleration << 10, 10, 10;
 
 	// joint task
 	auto joint_task_3 = new Sai2Primitives::JointTask(robot_3);
@@ -224,8 +232,8 @@ int main() {
 #else
 	joint_task_3->_use_velocity_saturation_flag = true;
 #endif
-	joint_task_3->_kp = 25.0;
-	joint_task_3->_kv = 10.0;
+	joint_task_3->_kp = 100.0;
+	joint_task_3->_kv = 40.0;
 	joint_task_3->_desired_position = q_init_desired;
 
 	/***** Robot 4 *****/
@@ -237,14 +245,14 @@ int main() {
 	posori_task_4->_use_velocity_saturation_flag = false;
 #endif
 	posori_task_4->_use_velocity_saturation_flag = false;
-	posori_task_4->_kp_pos = 100.0;
-	posori_task_4->_kv_pos = 20.0;
-	posori_task_4->_kp_ori = 100.0;
-	posori_task_4->_kv_ori = 20.0;
-	posori_task_4->_desired_velocity << 10, 10, 10;
-	posori_task_4->_desired_angular_velocity << 10*M_PI, 10*M_PI, 10*M_PI;
-	posori_task_4->_desired_acceleration << 10, 10, 10;
-	posori_task_4->_desired_angular_acceleration << 10*M_PI, 10*M_PI, 10*M_PI;
+	posori_task_4->_kp_pos = 1000.0;
+	posori_task_4->_kv_pos = 200.0;
+	posori_task_4->_kp_ori = 1000.0;
+	posori_task_4->_kv_ori = 200.0;
+	//posori_task_4->_desired_velocity << 10, 10, 10;
+	//posori_task_4->_desired_angular_velocity << 10, 10, 10;
+	//posori_task_4->_desired_acceleration << 10, 10, 10;
+	//posori_task_4->_desired_angular_acceleration << 10, 10, 10;
 
 	// joint task
 	auto joint_task_4 = new Sai2Primitives::JointTask(robot_4);
@@ -253,8 +261,8 @@ int main() {
 #else
 	joint_task_4->_use_velocity_saturation_flag = true;
 #endif
-	joint_task_4->_kp = 25.0;
-	joint_task_4->_kv = 10.0;
+	joint_task_4->_kp = 500.0;
+	joint_task_4->_kv = 200.0;
 	joint_task_4->_desired_position = q_init_desired;
 
 	// init torque containers
@@ -444,10 +452,10 @@ int main() {
 			N_prec_1.setIdentity();
 			posori_task_1->updateTaskModel(N_prec_1);
 			posori_task_1->computeTorques(posori_task_torques[0]);
-			posori_task_1->_desired_velocity << 10, 10, 10;
-			posori_task_1->_desired_angular_velocity << 10*M_PI, 10*M_PI, 10*M_PI;
-			posori_task_1->_desired_acceleration << 10, 10, 10;
-			posori_task_1->_desired_angular_acceleration << 10*M_PI, 10*M_PI, 10*M_PI;
+			//posori_task_1->_desired_velocity << 10, 10, 10;
+			//posori_task_1->_desired_angular_velocity << 10, 10, 10;
+			//posori_task_1->_desired_acceleration << 10, 10, 10;
+			//posori_task_1->_desired_angular_acceleration << 10, 10, 10;
 
 			// update task model and set hierarchy
 			N_prec = posori_task_1->_N;
@@ -463,6 +471,10 @@ int main() {
 			N_prec_2.setIdentity();
 			posori_task_2->updateTaskModel(N_prec_2);
 			posori_task_2->computeTorques(posori_task_torques[1]);
+			//posori_task_2->_desired_velocity << 10, 10, 10;
+			//posori_task_2->_desired_angular_velocity << 10, 10, 10;
+			//posori_task_2->_desired_acceleration << 10, 10, 10;
+			//posori_task_2->_desired_angular_acceleration << 10, 10, 10;
 
 			// update task model and set hierarchy
 			N_prec = posori_task_2->_N;
@@ -478,6 +490,10 @@ int main() {
 			N_prec_3.setIdentity();
 			posori_task_3->updateTaskModel(N_prec_3);
 			posori_task_3->computeTorques(posori_task_torques[2]);
+			//posori_task_3->_desired_velocity << 10, 10, 10;
+			//posori_task_3->_desired_angular_velocity << 10, 10, 10;
+			//posori_task_3->_desired_acceleration << 10, 10, 10;
+			//posori_task_3->_desired_angular_acceleration << 10, 10, 10;
 
 			// update task model and set hierarchy
 			N_prec = posori_task_3->_N;
@@ -493,10 +509,10 @@ int main() {
 			N_prec_4.setIdentity();
 			posori_task_4->updateTaskModel(N_prec_4);
 			posori_task_4->computeTorques(posori_task_torques[3]);
-			posori_task_4->_desired_velocity << 100, 100, 100;
-			posori_task_4->_desired_angular_velocity << 100*M_PI, 100*M_PI, 100*M_PI;
-			posori_task_4->_desired_acceleration << 100, 100, 100;
-			posori_task_4->_desired_angular_acceleration << 100*M_PI, 100*M_PI, 100*M_PI;
+			//posori_task_4->_desired_velocity << 10, 10, 10;
+			//posori_task_4->_desired_angular_velocity << 10, 10, 10;
+			//posori_task_4->_desired_acceleration << 10, 10, 10;
+			//posori_task_4->_desired_angular_acceleration << 10, 10, 10;
 
 			// update task model and set hierarchy
 			N_prec = posori_task_4->_N;
