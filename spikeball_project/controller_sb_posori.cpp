@@ -159,15 +159,15 @@ int main() {
 #else
 	posori_task_1->_use_velocity_saturation_flag = false;
 #endif
-	//posori_task_1->_use_velocity_saturation_flag = false;
+	posori_task_1->_use_velocity_saturation_flag = false;
 	posori_task_1->_kp_pos = 100.0;
 	posori_task_1->_kv_pos = 20.0;
 	posori_task_1->_kp_ori = 100.0;
 	posori_task_1->_kv_ori = 20.0;
-	posori_task_1->_desired_velocity << 100, 100, 100;
-	posori_task_1->_desired_angular_velocity << 100*M_PI, 100*M_PI, 100*M_PI;
-	posori_task_1->_desired_acceleration << 100, 100, 100;
-	posori_task_1->_desired_angular_acceleration << 100*M_PI, 100*M_PI, 100*M_PI;
+	posori_task_1->_desired_velocity << 10, 10, 10;
+	posori_task_1->_desired_angular_velocity << 10*M_PI, 10*M_PI, 10*M_PI;
+	posori_task_1->_desired_acceleration << 10, 10, 10;
+	posori_task_1->_desired_angular_acceleration << 10*M_PI, 10*M_PI, 10*M_PI;
 
 	// joint task
 	auto joint_task_1 = new Sai2Primitives::JointTask(robot_1);
@@ -236,10 +236,15 @@ int main() {
 #else
 	posori_task_4->_use_velocity_saturation_flag = false;
 #endif
+	posori_task_4->_use_velocity_saturation_flag = false;
 	posori_task_4->_kp_pos = 100.0;
 	posori_task_4->_kv_pos = 20.0;
 	posori_task_4->_kp_ori = 100.0;
 	posori_task_4->_kv_ori = 20.0;
+	posori_task_4->_desired_velocity << 10, 10, 10;
+	posori_task_4->_desired_angular_velocity << 10*M_PI, 10*M_PI, 10*M_PI;
+	posori_task_4->_desired_acceleration << 10, 10, 10;
+	posori_task_4->_desired_angular_acceleration << 10*M_PI, 10*M_PI, 10*M_PI;
 
 	// joint task
 	auto joint_task_4 = new Sai2Primitives::JointTask(robot_4);
@@ -374,7 +379,7 @@ int main() {
 		if (((x_vel_ball_prev(0) < 0) == (x_vel_ball(0) < 0)) && ((x_vel_ball_prev(1) < 0) == (x_vel_ball(1) < 0))) {
 			velHasDifSign = false;
 		} else {
-			cout << "VEL CHANGED SIGNS \n";
+			//cout << "VEL CHANGED SIGNS \n";
 			velHasDifSign = true;
 		}
 
@@ -386,11 +391,11 @@ int main() {
 					passing = false;
 				} 
 			} else if (velHasDifSign) { //has spiked
-				cout << "******* HIT ROBOT AND SPIKED ********\n";
+				//cout << "******* HIT ROBOT AND SPIKED ********\n";
 				predictOn = false;
 				passing = false;
 			} else if (x_vel_ball(2) > 0 && !predictOn) { //hit net
-				cout << "****** HIT NET ***** \n ";
+				//cout << "****** HIT NET ***** \n ";
 				predictOn = true;
 				sameTeam = false; //TODO: CHANGE TO RANDOMLY CHOOSING
 				if (sameTeam) { //passing next
@@ -399,7 +404,7 @@ int main() {
 					passing = true;
 				}
 			} else if (predictOn) { //going towards robot to spike
-				if (counter % 500 == 0) cout << "Going towards robot\n";
+				//if (counter % 500 == 0) cout << "Going towards robot\n";
 			} else { // going towards net
 				predictOn = false;
 			}
@@ -415,11 +420,11 @@ int main() {
 		// Predicting end effector
 		if (predictOn) {
 			robot_des = getRobot(x_vel_ball, sameTeam, robot_des);
-			if (counter % 500 == 0) cout << "Controlled robot: " << robot_des << "\n";
-			i//x_pred = getPrediction();
+			//if (counter % 500 == 0) cout << "Controlled robot: " << robot_des << "\n";
+			//x_pred = getPrediction();
 			//xs_des[robot_des] = x_pred;
 			//Rs_des[robot_des] = getOrientation();
-			controlled_robot = robot_des;
+			controlled_robot = 3; //robot_des;
 		} else {
 			controlled_robot = -1;
 		}
@@ -439,6 +444,10 @@ int main() {
 			N_prec_1.setIdentity();
 			posori_task_1->updateTaskModel(N_prec_1);
 			posori_task_1->computeTorques(posori_task_torques[0]);
+			posori_task_1->_desired_velocity << 10, 10, 10;
+			posori_task_1->_desired_angular_velocity << 10*M_PI, 10*M_PI, 10*M_PI;
+			posori_task_1->_desired_acceleration << 10, 10, 10;
+			posori_task_1->_desired_angular_acceleration << 10*M_PI, 10*M_PI, 10*M_PI;
 
 			// update task model and set hierarchy
 			N_prec = posori_task_1->_N;
@@ -484,6 +493,10 @@ int main() {
 			N_prec_4.setIdentity();
 			posori_task_4->updateTaskModel(N_prec_4);
 			posori_task_4->computeTorques(posori_task_torques[3]);
+			posori_task_4->_desired_velocity << 100, 100, 100;
+			posori_task_4->_desired_angular_velocity << 100*M_PI, 100*M_PI, 100*M_PI;
+			posori_task_4->_desired_acceleration << 100, 100, 100;
+			posori_task_4->_desired_angular_acceleration << 100*M_PI, 100*M_PI, 100*M_PI;
 
 			// update task model and set hierarchy
 			N_prec = posori_task_4->_N;
