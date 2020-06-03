@@ -24,7 +24,7 @@
 
 	<robot name="ball">
 		<model dir="./resources" path="ball.urdf" name="ball" />
-		<origin xyz="-.6 -.6 1.0" rpy="0 0 0" />
+		<origin xyz="-.6 -.6 0.75" rpy="0 0 0" />
 	</robot>
 
 	<static_object name="Ground_With_Texture">
