@@ -120,29 +120,38 @@ int main() {
 	graphics->getCameraPose(camera_name, camera_pos, camera_vertical, camera_lookat);
 
 	// desired initial joint angles for each robot
-	VectorXd q_init_desired(7);
-	q_init_desired << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
-	q_init_desired *= M_PI/180.0;
 
 	VectorXd q_init_desired_1(7);
 	q_init_desired_1 << 150, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
 	q_init_desired_1 *= M_PI/180.0;
 
+	VectorXd q_init_desired_2(7);
+	q_init_desired_2 << -120, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
+	q_init_desired_2 *= M_PI/180.0;
+
+	VectorXd q_init_desired_3(7);
+	q_init_desired_3 << -30.0, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
+	q_init_desired_3 *= M_PI/180.0;
+
+	VectorXd q_init_desired_4(7);
+	q_init_desired_4 << 60, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
+	q_init_desired_4 *= M_PI/180.0;
+
 	// load robots
 	auto robot_1 = new Sai2Model::Sai2Model(robot_file, false);
-	robot_1->_q = q_init_desired;
+	robot_1->_q = q_init_desired_1;
 	robot_1->updateModel();
 
 	auto robot_2 = new Sai2Model::Sai2Model(robot_file, false);
-	robot_2->_q = q_init_desired;
+	robot_2->_q = q_init_desired_2;
 	robot_2->updateModel();
 
 	auto robot_3 = new Sai2Model::Sai2Model(robot_file, false);
-	robot_3->_q = q_init_desired;
+	robot_3->_q = q_init_desired_3;
 	robot_3->updateModel();
 
 	auto robot_4 = new Sai2Model::Sai2Model(robot_file, false);
-	robot_4->_q = q_init_desired;
+	robot_4->_q = q_init_desired_4;
 	robot_4->updateModel();
 
 //	Sai2Model::Sai2Model robots[4];

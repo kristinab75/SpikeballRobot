@@ -35,7 +35,7 @@ double sat(double x) {
 // ball detection functions
 Vector3d getNoisyPosition(Vector3d posInWorld);
 int getRobot(Vector3d x_vel_ball, bool sameTeam, int robotDes);
-VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos, Vector3d prevPred);
+VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, Vector3d centerPos);
 MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, Vector3d endPos);
 
 #define RAD(deg) ((double)(deg) * M_PI / 180.0)
@@ -160,10 +160,10 @@ int main() {
 	posori_task_1->_use_velocity_saturation_flag = false;
 #endif
 	posori_task_1->_use_velocity_saturation_flag = false;
-	posori_task_1->_kp_pos = 1000.0;
-	posori_task_1->_kv_pos = 200.0;
-	posori_task_1->_kp_ori = 1000.0;
-	posori_task_1->_kv_ori = 200.0;
+	posori_task_1->_kp_pos = 100.0;
+	posori_task_1->_kv_pos = 20.0;
+	posori_task_1->_kp_ori = 100.0;
+	posori_task_1->_kv_ori = 20.0;
 	//posori_task_1->_desired_velocity << 10, 10, 10;
 	//posori_task_1->_desired_angular_velocity << 10, 10, 10;
 	//posori_task_1->_desired_acceleration << 10, 10, 10;
@@ -176,8 +176,8 @@ int main() {
 #else
 	joint_task_1->_use_velocity_saturation_flag = true;
 #endif
-	joint_task_1->_kp = 100.0;
-	joint_task_1->_kv = 40.0;
+	joint_task_1->_kp = 25.0;
+	joint_task_1->_kv = 10.0;
 	joint_task_1->_desired_position = q_init_desired;
 
 	/***** Robot 2 *****/
@@ -188,10 +188,10 @@ int main() {
 #else
 	posori_task_2->_use_velocity_saturation_flag = false;
 #endif
-	posori_task_2->_kp_pos = 200.0;
-	posori_task_2->_kv_pos = 40.0;
-	posori_task_2->_kp_ori = 200.0;
-	posori_task_2->_kv_ori = 40.0;
+	posori_task_2->_kp_pos = 100.0;
+	posori_task_2->_kv_pos = 20.0;
+	posori_task_2->_kp_ori = 100.0;
+	posori_task_2->_kv_ori = 20.0;
 	//posori_task_2->_desired_velocity << 10, 10, 10;
 	//posori_task_2->_desired_angular_velocity << 10, 10, 10;
 	//posori_task_2->_desired_acceleration << 10, 10, 10;
@@ -204,8 +204,8 @@ int main() {
 #else
 	joint_task_2->_use_velocity_saturation_flag = true;
 #endif
-	joint_task_2->_kp = 100.0;
-	joint_task_2->_kv = 40.0;
+	joint_task_2->_kp = 25.0;
+	joint_task_2->_kv = 10.0;
 	joint_task_2->_desired_position = q_init_desired;
 
 	/***** Robot 3 *****/
@@ -216,10 +216,10 @@ int main() {
 #else
 	posori_task_3->_use_velocity_saturation_flag = false;
 #endif
-	posori_task_3->_kp_pos = 200.0;
-	posori_task_3->_kv_pos = 40.0;
-	posori_task_3->_kp_ori = 200.0;
-	posori_task_3->_kv_ori = 40.0;
+	posori_task_3->_kp_pos = 100.0;
+	posori_task_3->_kv_pos = 20.0;
+	posori_task_3->_kp_ori = 100.0;
+	posori_task_3->_kv_ori = 20.0;
 	//posori_task_3->_desired_velocity << 10, 10, 10;
 	//posori_task_3->_desired_angular_velocity << 10, 10, 10;
 	//posori_task_3->_desired_acceleration << 10, 10, 10;
@@ -232,8 +232,8 @@ int main() {
 #else
 	joint_task_3->_use_velocity_saturation_flag = true;
 #endif
-	joint_task_3->_kp = 100.0;
-	joint_task_3->_kv = 40.0;
+	joint_task_3->_kp = 25.0;
+	joint_task_3->_kv = 10.0;
 	joint_task_3->_desired_position = q_init_desired;
 
 	/***** Robot 4 *****/
@@ -245,10 +245,10 @@ int main() {
 	posori_task_4->_use_velocity_saturation_flag = false;
 #endif
 	posori_task_4->_use_velocity_saturation_flag = false;
-	posori_task_4->_kp_pos = 1000.0;
-	posori_task_4->_kv_pos = 200.0;
-	posori_task_4->_kp_ori = 1000.0;
-	posori_task_4->_kv_ori = 200.0;
+	posori_task_4->_kp_pos = 100.0;
+	posori_task_4->_kv_pos = 20.0;
+	posori_task_4->_kp_ori = 100.0;
+	posori_task_4->_kv_ori = 20.0;
 	//posori_task_4->_desired_velocity << 10, 10, 10;
 	//posori_task_4->_desired_angular_velocity << 10, 10, 10;
 	//posori_task_4->_desired_acceleration << 10, 10, 10;
@@ -261,8 +261,8 @@ int main() {
 #else
 	joint_task_4->_use_velocity_saturation_flag = true;
 #endif
-	joint_task_4->_kp = 500.0;
-	joint_task_4->_kv = 200.0;
+	joint_task_4->_kp = 25.0;
+	joint_task_4->_kv = 10.0;
 	joint_task_4->_desired_position = q_init_desired;
 
 	// init torque containers
@@ -311,10 +311,14 @@ int main() {
 	bool sameTeam = false;
 	bool passing = false;
 	bool predictOn = false;
+	bool hasCalculated = false;
 	bool velHasDifSign = false;
 	int numPasses = 0;
 	int currPass = 0;
 	int robot_des = 2;
+	
+	//Debug
+	Vector3d x_world1;
 
 	// START LOOP
 	while (runloop) {
@@ -347,6 +351,7 @@ int main() {
 		robot_1->updateModel();
 		robot_1->position(xs[0], link_name, pos_in_link);
 		robot_1->rotation(Rs[0], link_name);
+		robot_1->positionInWorld(x_world1, link_name, pos_in_link);
 
 		robot_2->_q = redis_client.getEigenMatrixJSON(JOINT_ANGLES_KEYS[1]);
 		robot_2->_dq = redis_client.getEigenMatrixJSON(JOINT_VELOCITIES_KEYS[1]);
@@ -387,7 +392,8 @@ int main() {
 		if (((x_vel_ball_prev(0) < 0) == (x_vel_ball(0) < 0)) && ((x_vel_ball_prev(1) < 0) == (x_vel_ball(1) < 0))) {
 			velHasDifSign = false;
 		} else {
-			//cout << "VEL CHANGED SIGNS \n";
+			cout << "VEL CHANGED SIGNS \n";
+			cout << "Ball position: " << x_ball.transpose() << "\n";
 			velHasDifSign = true;
 		}
 
@@ -399,12 +405,13 @@ int main() {
 					passing = false;
 				} 
 			} else if (velHasDifSign) { //has spiked
-				//cout << "******* HIT ROBOT AND SPIKED ********\n";
+				cout << "******* HIT ROBOT AND SPIKED ********\n";
 				predictOn = false;
 				passing = false;
 			} else if (x_vel_ball(2) > 0 && !predictOn) { //hit net
-				//cout << "****** HIT NET ***** \n ";
+				cout << "****** HIT NET ***** \n ";
 				predictOn = true;
+				hasCalculated = false;
 				sameTeam = false; //TODO: CHANGE TO RANDOMLY CHOOSING
 				if (sameTeam) { //passing next
 					numPasses = 1; //TODO: CHANGE TO RANDOMLY CHOOSING 
@@ -427,22 +434,36 @@ int main() {
 
 		// Predicting end effector
 		if (predictOn) {
-			robot_des = getRobot(x_vel_ball, sameTeam, robot_des);
+			robot_des = 0; //getRobot(x_vel_ball, sameTeam, robot_des);
 			//if (counter % 500 == 0) cout << "Controlled robot: " << robot_des << "\n";
-			//x_pred = getPrediction();
-			//xs_des[robot_des] = x_pred;
+			VectorXd targetNet(3);
+			targetNet << 0, 0, 0;
+			VectorXd centerPos(3);
+			centerPos << 1, 1, 0;
+			
+			if (!hasCalculated) {
+				x_pred = getPrediction(x_ball, x_vel_ball, targetNet, .5, centerPos);
+				hasCalculated = true;
+			}
+			//if (counter % 500 == 0) cout << "x_pred: " << x_pred.transpose() << "\n";
+			if (counter % 500 == 0) cout << "pos robot: " << xs[0].transpose() << "\n";
+			x_pred << 0.58, 0.718, 0.76;
+			x_pred(0) = x_pred(0) - 1;
+			x_pred(1) = x_pred(1) - 1;
+			xs_des[robot_des] = x_pred;
+			
 			//Rs_des[robot_des] = getOrientation();
-			//controlled_robot = 3; //robot_des;
+			controlled_robot = robot_des;
 		} else {
 			controlled_robot = -1;
 		}
 
 		// Change these values based on prediction algorithm output
 		//controlled_robot = stoi(redis_client.get(ACTIVE_ROBOT));
-		controlled_robot = 0;
+		//controlled_robot = 3;
 		Vector3d x_off;
-		x_off << -.21, -0.32, 0.59;
-		xs_des[controlled_robot] = x_off; //xs_init[controlled_robot] + x_off;
+		x_off << 1, 1, 0;
+		//xs_des[controlled_robot] = x_off; //xs_init[controlled_robot] + x_off;
 		Rs_des[controlled_robot] = Rs_init[controlled_robot];
 
 		// Control only the specified robot by controlled_robot, which is output from the prediction algorithm
@@ -570,91 +591,67 @@ Vector3d getNoisyPosition(Vector3d posInWorld) {
  * Returns the predicted end position of the ball given a position and velocity of the ball's trajectory
  */
 
-VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, MatrixXd centerPos, Vector3d prevPred) {
-	// initPos      - [x,y,z] initial position
-	// initVel      - [vx, vy, vz] initial velocity
-	// targetPos    - [x,y,z] desired final position
-	// r            - reachable radius around a robot
-	// centerPos    - [x,y,z] matrix of robot positions
+VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, Vector3d centerPos) {
+    
+    /* Function Inputs */
+    // initPos      - [x,y,z] initial position
+    // initVel      - [vx, vy, vz] initial velocity
+    // targetPos    - [x,y,z] desired final position
+    // r            - reachable radius around a robot
+    // centerPos    - [x,y,z] robot positions
+    
+    /* Function Outputs */
+    // endPos       - [x,y,z] desired position of end effector; if unreachable, returns [0,0,0]
+    
 
-	double g = 9.81;
-	int numRobots = 4;
-	int robotHit = -1;
-	double x1 = 0;
-	double y1 = 0;
+    double g = 9.81;
+    double x1 = 0;
+    double y1 = 0;
+    VectorXd endPos = VectorXd::Zero(3);
 
-	for (int i = 0; i < numRobots; i++) {
+    // handles singuality when traveling vertically
+    if (initVel(0) == 0) {
+        initVel(0) = 0.01; //assigns some epsilon velocity to handle singularity
+    }
+    
+    double M = initVel(1) / initVel(0);    // XY slope of trajectory
+    double B = initPos(1) - initPos(0)*M; // Y intercept
+    double a = centerPos(0);
+    double b = centerPos(1);
 
-		if (initVel(0) == 0) {
-			//std::cout << "Warning: Zero X Velocity caused divide by Zero \n";
-			continue;
-		}
+    // check for real solutions
+    double solutionCheck = pow(r,2)*(1+pow(M,2)) - pow((b - M*a - B),2);
+    
+    if (solutionCheck <= 0) {
+        endPos << 0,0,0;
+    } else {
+        
+        // calculates candidate x intersection
+        double x1_1 = ((a + b*M - B*M) - sqrt(-(pow(a,2))*(pow(M,2)) + 2*a*b*M - 2*a*B*M - (pow(b,2)) + 2*b*B - (pow(B,2)) + (pow(M,2)) * (pow(r,2)) + (pow(r,2))) )   /  (pow(M,2) + 1);
+        double x1_2 = ((a + b*M - B*M) + sqrt(-(pow(a,2))*(pow(M,2)) + 2*a*b*M - 2*a*B*M - (pow(b,2)) + 2*b*B - (pow(B,2)) + (pow(M,2)) * (pow(r,2)) + (pow(r,2))) )   /  (pow(M,2) + 1);
 
-		double M = initVel(1)/initVel(0); // XY slope of trajectory
-		double B = initPos(1) - initPos(0)*M; // Y intercept
+        double dist1 = pow( (x1_1 - initPos(0)) ,2) + pow(((M*x1_1 + B) - initPos(1)) ,2);
+        double dist2 = pow( (x1_2 - initPos(0)) ,2) + pow(((M*x1_2 + B) - initPos(1)) ,2);
 
-		double a = centerPos(i,0);
-		double b = centerPos(i,1);
+        if (dist1 < dist2) {
+            x1 = x1_1;
+            y1 = M*(x1_1) + B;
+        } else {
+            x1 = x1_2;
+            y1 = M*(x1_2) + B;
+        }
 
-		// check for real solutions
-		double solutionCheck = pow(r,2)*(1+pow(M,2)) - pow((b - M*a - B),2);
-		if (solutionCheck <= 0) {
-			continue; // if we dont have two real solutions, skip to next robot
-		}
+        double t1 = (x1 - initPos(0)) / initVel(0); // [s] time to impact
+        double z1 = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2); // [m] z intercept point
 
-		// candidate x values
-		double x1_1 = ((a + b*M - B*M) - sqrt(-(pow(a,2))*(pow(M,2)) + 2*a*b*M - 2*a*B*M - (pow(b,2)) + 2*b*B - (pow(B,2)) + (pow(M,2)) * (pow(r,2)) + (pow(r,2))) )   /  (pow(M,2) + 1);
-
-		double x1_2 = ((a + b*M - B*M) + sqrt(-(pow(a,2))*(pow(M,2)) + 2*a*b*M - 2*a*B*M - (pow(b,2)) + 2*b*B - (pow(B,2)) + (pow(M,2)) * (pow(r,2)) + (pow(r,2))) )   /  (pow(M,2) + 1);
-
-		// checks solutions to see if it in the correct direction
-		if (x1_1 - initPos(0) > 0 && initVel(0) < 0){
-			continue;
-		} else if (x1_1 - initPos(0) < 0 && initVel(0) > 0){
-			continue;
-		}
-
-		double dist1 = pow( (x1_1 - initPos(0)) ,2) + pow(((M*x1_1 + B) - initPos(1)) ,2);
-		double dist2 = pow( (x1_2 - initPos(0)) ,2) + pow(((M*x1_2 + B) - initPos(1)) ,2);
-
-
-
-		if (dist1 < dist2) {
-			x1 = x1_1;
-			y1 = M*(x1_1) + B;
-		} else {
-			x1 = x1_2;
-			y1 = M*(x1_2) + B;
-		}
-
-		double t1 = (x1 - initPos(0)) / initVel(0);
-		double z_intersect = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2);
-
-		if (z_intersect < 0) {
-			continue;
-		}
-
-		robotHit = i;
-	}
-
-
-	VectorXd endPos = VectorXd::Zero(4);
-	if (robotHit == -1) {
-		// std::cout << "Warning: No robots intersect this trajectory\n";
-		endPos << prevPred(0), prevPred(1), prevPred(2), -1;
-		return endPos;
-	} else {
-		cout << "///////////////////////////ROBOT WILL INTERSECT///////////////////////\n";
-		double t1 = (x1 - initPos(0)) / initVel(0);
-		double z1 = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2);
-		/*if (z1 < 0) {
-		  endPos << prevPred(0), prevPred(1), prevPred(2), -1;
-		  return endPos; 
-		  }*/
-
-		endPos << x1,y1,z1, robotHit;
-		return endPos;
-	}
+        if (z1 < 0) { // if reachable position
+            endPos << 0,0,0;
+        } else {
+            endPos << x1,y1,z1;
+        }
+    }
+    
+    return endPos;
 }
 
 
@@ -744,9 +741,9 @@ int getRobot(Vector3d x_vel_ball, bool sameTeam, int robotDes) {
 		} else if (robotDes == 4) {
 			returnRobot = 0;
 		} else if (robotDes == 2) {
-			returnRobot == 2;
+			returnRobot = 2;
 		} else {
-			returnRobot == 1;
+			returnRobot = 1;
 		}
 	}
 	return returnRobot;
