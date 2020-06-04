@@ -316,6 +316,11 @@ int main() {
 	int numPasses = 0;
 	int currPass = 0;
 	int robot_des = 2;
+	VectorXd x_off_robot(4);
+	VectorXd y_off_robot(4);
+
+	x_off_robot << 1, -1, -1, 1;
+	y_off_robot << 1, 1, -1, -1;
 	
 	//Debug
 	Vector3d x_world1;
@@ -380,7 +385,7 @@ int main() {
 		// Deal with initial ball position
 		x_ball(0) = x_ball(0) - .6;
 		x_ball(1) = x_ball(1) - .6;
-		x_ball(2) = x_ball(2) + .75;
+		x_ball(2) = x_ball(2) + .6;
 		
 
 
@@ -435,7 +440,7 @@ int main() {
 
 		// Predicting end effector
 		if (predictOn) {
-			robot_des = 0; //getRobot(x_vel_ball, sameTeam, robot_des);
+			robot_des = getRobot(x_vel_ball, sameTeam, robot_des);
 			//if (counter % 500 == 0) cout << "Controlled robot: " << robot_des << "\n";
 			VectorXd targetNet(3);
 			targetNet << 0, 0, 0;
@@ -446,6 +451,7 @@ int main() {
 				x_pred = getPrediction(x_ball, x_vel_ball, targetNet, .5, centerPos);
 				hasCalculated = true;
 			}
+			//if (counter % 500 == 0) cout << "Ball position: " << x_ball.transpose() << "\n";
 			//if (counter % 500 == 0) cout << "x_pred: " << x_pred.transpose() << "\n";
 			//if (counter % 500 == 0) {
 				//cout << "pos robot: " << xs[0].transpose() << "\n";
@@ -455,9 +461,17 @@ int main() {
 				//cout << "\n";
 			//}
 			//x_pred << 0.58, 0.718, 0.76;
-			x_pred << 0.58, 0.718, 0.66;
-			x_pred(0) = x_pred(0) - 1;
-			x_pred(1) = x_pred(1) - 1;
+			if (robot_des == 0)  {
+				x_pred << 0.58, 0.718, 0.6;
+			} else if (robot_des == 1) {
+				x_pred << -0.58, 0.718, 0.6;
+			}  else if (robot_des == 2) {
+				x_pred << -0.58, -0.718, 0.3;
+			} else if (robot_des == 3) {
+				x_pred << 0.58, -0.718, 0.6;
+			}
+			x_pred(0) = x_pred(0) - x_off_robot(robot_des);
+			x_pred(1) = x_pred(1) - y_off_robot(robot_des);
 			xs_des[robot_des] = x_pred;
 			
 			//Rs_des[robot_des] = getOrientation();
@@ -652,6 +666,8 @@ VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
         }
 
         double t1 = (x1 - initPos(0)) / initVel(0); // [s] time to impact
+
+	//cout << "t1: " << t1 << "\n";
         double z1 = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2); // [m] z intercept point
 
         if (z1 < 0) { // if reachable position
@@ -746,11 +762,11 @@ int getRobot(Vector3d x_vel_ball, bool sameTeam, int robotDes) {
 			returnRobot = 2;
 		}
 	} else {
-		if (robotDes == 1) {
+		if (robotDes == 0) {
 			returnRobot = 3;
-		} else if (robotDes == 4) {
+		} else if (robotDes == 3) {
 			returnRobot = 0;
-		} else if (robotDes == 2) {
+		} else if (robotDes == 1) {
 			returnRobot = 2;
 		} else {
 			returnRobot = 1;
