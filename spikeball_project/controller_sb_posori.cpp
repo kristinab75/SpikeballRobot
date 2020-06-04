@@ -130,7 +130,7 @@ int main() {
 	// prepare controller
 	int dof = robot_1->dof();
 	const string link_name = "link7";
-	const Vector3d pos_in_link = Vector3d(0, 0, 0.15);	//CHANGE THIS FOR OUR OWN END EFFECTOR
+	const Vector3d pos_in_link = Vector3d(0, 0, 0.275);	//CHANGE THIS FOR OUR OWN END EFFECTOR
 
 	// CHANGE THESSSSEEEEEEEEEE
 	const string link_name_ball = "link6";		//+++++++++
@@ -381,6 +381,7 @@ int main() {
 		x_ball(0) = x_ball(0) - .6;
 		x_ball(1) = x_ball(1) - .6;
 		x_ball(2) = x_ball(2) + .75;
+		
 
 
 		// ************* Logic to play spikeball ******************
@@ -446,8 +447,15 @@ int main() {
 				hasCalculated = true;
 			}
 			//if (counter % 500 == 0) cout << "x_pred: " << x_pred.transpose() << "\n";
-			if (counter % 500 == 0) cout << "pos robot: " << xs[0].transpose() << "\n";
-			x_pred << 0.58, 0.718, 0.76;
+			//if (counter % 500 == 0) {
+				//cout << "pos robot: " << xs[0].transpose() << "\n";
+				//x_world1(0) = x_world1(0) + 1;
+				//x_world1(1) = x_world1(1) + 1;
+				//cout << "pos world: " << x_world1.transpose() << "\n";
+				//cout << "\n";
+			//}
+			//x_pred << 0.58, 0.718, 0.76;
+			x_pred << 0.58, 0.718, 0.66;
 			x_pred(0) = x_pred(0) - 1;
 			x_pred(1) = x_pred(1) - 1;
 			xs_des[robot_des] = x_pred;
@@ -462,9 +470,11 @@ int main() {
 		//controlled_robot = stoi(redis_client.get(ACTIVE_ROBOT));
 		//controlled_robot = 3;
 		Vector3d x_off;
-		x_off << 1, 1, 0;
+		x_off << 0, 0, 0;
 		//xs_des[controlled_robot] = x_off; //xs_init[controlled_robot] + x_off;
+		
 		Rs_des[controlled_robot] = Rs_init[controlled_robot];
+		//controlled_robot = -1;
 
 		// Control only the specified robot by controlled_robot, which is output from the prediction algorithm
 		if (controlled_robot == 0) {
