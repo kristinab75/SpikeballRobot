@@ -282,8 +282,13 @@ int main() {
 
 	// init control variables 
 	Vector3d x_ball, x_vel_ball, x_vel_ball_prev, x_pred;
-	Vector3d xs[4], xs_des[4], xs_init[4];
+	Vector3d xs[4], xs_des[4], xs_init[4], center_pos[4];
 	Matrix3d Rs[4], Rs_des[4], Rs_init[4];
+
+	center_pos[0] << 1, 1, 0;
+	center_pos[1] << -1, 1, 0;
+	center_pos[2] << -1, -1, 0;
+	center_pos[3] << 1, -1, 0;
 
 	Matrix3d R_pred;
 	VectorXd output(4);
@@ -398,8 +403,8 @@ int main() {
 		if (((x_vel_ball_prev(0) < 0) == (x_vel_ball(0) < 0)) && ((x_vel_ball_prev(1) < 0) == (x_vel_ball(1) < 0))) {
 			velHasDifSign = false;
 		} else {
-			cout << "VEL CHANGED SIGNS \n";
-			cout << "Ball position: " << x_ball.transpose() << "\n";
+			//cout << "VEL CHANGED SIGNS \n";
+			//cout << "Ball position: " << x_ball.transpose() << "\n";
 			velHasDifSign = true;
 		}
 
@@ -411,11 +416,11 @@ int main() {
 					passing = false;
 				} 
 			} else if (velHasDifSign) { //has spiked
-				cout << "******* HIT ROBOT AND SPIKED ********\n";
+				//cout << "******* HIT ROBOT AND SPIKED ********\n";
 				predictOn = false;
 				passing = false;
 			} else if (x_vel_ball(2) > 0 && !predictOn) { //hit net
-				cout << "****** HIT NET ***** \n ";
+				//cout << "****** HIT NET ***** \n ";
 				predictOn = true;
 				hasCalculated = false;
 				sameTeam = false; //TODO: CHANGE TO RANDOMLY CHOOSING
@@ -438,17 +443,16 @@ int main() {
 			}
 		}
 
+
 		// Predicting end effector
 		if (predictOn) {
 			robot_des = getRobot(x_vel_ball, sameTeam, robot_des);
 			//if (counter % 500 == 0) cout << "Controlled robot: " << robot_des << "\n";
 			VectorXd targetNet(3);
 			targetNet << 0, 0, 0;
-			VectorXd centerPos(3);
-			centerPos << 1, 1, 0;
 			
 			if (!hasCalculated) {
-				x_pred = getPrediction(x_ball, x_vel_ball, targetNet, .5, centerPos);
+				x_pred = getPrediction(x_ball, x_vel_ball, targetNet, .5, center_pos[robot_des]);
 				hasCalculated = true;
 			}
 			//if (counter % 500 == 0) cout << "Ball position: " << x_ball.transpose() << "\n";
@@ -488,7 +492,15 @@ int main() {
 		//xs_des[controlled_robot] = x_off; //xs_init[controlled_robot] + x_off;
 		
 		Rs_des[controlled_robot] = Rs_init[controlled_robot];
+		VectorXd command_zero(dof);
+//		command_zero.setZero();
+//		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[0], command_zero);
+//		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[1], command_zero);
+//		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[2], command_zero);
+//		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[3], command_zero);
 		//controlled_robot = -1;
+
+		redis_client.set(ACTIVE_ROBOT, to_string(controlled_robot));
 
 		// Control only the specified robot by controlled_robot, which is output from the prediction algorithm
 		if (controlled_robot == 0) {
@@ -666,9 +678,15 @@ VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
         }
 
         double t1 = (x1 - initPos(0)) / initVel(0); // [s] time to impact
+        double t2 = (y1 - initPos(1)) / initVel(1);
+
+		//if (t1 != t2) {
+			
+		//}
 
 	//cout << "t1: " << t1 << "\n";
         double z1 = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2); // [m] z intercept point
+		//cout << "predicted position: " << x1 << "\t" << y1 << "\t" << z1 << "\n";
 
         if (z1 < 0) { // if reachable position
             endPos << 0,0,0;

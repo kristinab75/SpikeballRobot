@@ -63,6 +63,7 @@ const std::string JOINT_TORQUES_COMMANDED_KEY_3  = "cs225a::robot::panda3::actua
 const std::string JOINT_TORQUES_COMMANDED_KEY_4  = "cs225a::robot::panda4::actuators::fgc"; 
 const std::string BALL_TORQUES_COMMANDED_KEY  = "cs225a::robot::ball::actuators::fgc";  //+++++++++
 const std::string FIRST_LOOP_KEY = "cs225a::robot::ball::initvel";
+const std::string ACTIVE_ROBOT = "cs225a::robot::index";
 
 const std::string JOINT_ANGLES_KEYS[] = {JOINT_ANGLES_KEY_1, JOINT_ANGLES_KEY_2,JOINT_ANGLES_KEY_3,JOINT_ANGLES_KEY_4};
 const std::string JOINT_VELOCITIES_KEYS[] = {JOINT_VELOCITIES_KEY_1, JOINT_VELOCITIES_KEY_2,JOINT_VELOCITIES_KEY_3,JOINT_VELOCITIES_KEY_4};
@@ -415,6 +416,7 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 
 	VectorXd firstLoop(6);
 	bool haveDone = false;
+	string robot_des;
 
 	fSimulationRunning = true;
 	while (fSimulationRunning) {
@@ -442,6 +444,8 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 			}
 		}
 
+		robot_des = redis_client.get(ACTIVE_ROBOT);
+
 		// cout << "After ball velocity" << "\n";
 
 		// get gravity torques
@@ -458,18 +462,37 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 // 			sim->setJointTorques(robot_names[i], command_torques[i] + g);
 // 		}
 
-		command_torques[0] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[0]);
-		// redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[0], command_torques[0]);
+		if (robot_des.compare("0") == 0) {
+			command_torques[0] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[0]);
+			command_torques[1].setZero();
+			command_torques[2].setZero();
+			command_torques[3].setZero();
+		} else if (robot_des.compare("1") == 0) {
+			command_torques[1] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[1]);
+			command_torques[0].setZero();
+			command_torques[2].setZero();
+			command_torques[3].setZero();
+		} else if (robot_des.compare("2") == 0) {
+			command_torques[2] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[2]);
+			command_torques[1].setZero();
+			command_torques[0].setZero();
+			command_torques[3].setZero();
+		} else if (robot_des.compare("3") == 0) {
+			command_torques[3] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[3]);
+			command_torques[1].setZero();
+			command_torques[2].setZero();
+			command_torques[0].setZero();
+		} 
+
+
+
 		sim->setJointTorques(robot_names[0], command_torques[0] + g1);
-
-		command_torques[1] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[1]);
 		sim->setJointTorques(robot_names[1], command_torques[1] + g2);
-
-		command_torques[2] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[2]);
 		sim->setJointTorques(robot_names[2], command_torques[2] + g3);
-
-		command_torques[3] = redis_client.getEigenMatrixJSON(JOINT_TORQUES_COMMAND_KEYS[3]);
 		sim->setJointTorques(robot_names[3], command_torques[3] + g4);
+
+
+
 
 		// command_torques_ball = redis_client.getEigenMatrixJSON(BALL_TORQUES_COMMANDED_KEY);
         // sim->setJointTorques(obj_name, command_torques_ball); 
@@ -482,6 +505,27 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 //		else
 //			sim->setJointTorques(robot_name, command_torques - robot->_M*kvj*robot->_dq + g);  // can comment out the joint damping if controller does this 
 
+		VectorXd robot_vel_zero(dof);
+		robot_vel_zero.setZero();
+
+		if (robot_des.compare("0") == 0) {
+			sim->setJointVelocities(robot_name_2, robot_vel_zero);
+			sim->setJointVelocities(robot_name_3, robot_vel_zero);
+			sim->setJointVelocities(robot_name_4, robot_vel_zero);
+		} else if (robot_des.compare("1") == 0) {
+			sim->setJointVelocities(robot_name_1, robot_vel_zero);
+			sim->setJointVelocities(robot_name_3, robot_vel_zero);
+			sim->setJointVelocities(robot_name_4, robot_vel_zero);
+		} else if (robot_des.compare("2") == 0) {
+			sim->setJointVelocities(robot_name_2, robot_vel_zero);
+			sim->setJointVelocities(robot_name_1, robot_vel_zero);
+			sim->setJointVelocities(robot_name_4, robot_vel_zero);
+		} else if (robot_des.compare("3") == 0) {
+			sim->setJointVelocities(robot_name_2, robot_vel_zero);
+			sim->setJointVelocities(robot_name_3, robot_vel_zero);
+			sim->setJointVelocities(robot_name_1, robot_vel_zero);
+		}
+
 		// integrate forward
 		double curr_time = timer.elapsedTime() / time_slowdown_factor;
 		double loop_dt = curr_time - last_time; 
@@ -490,23 +534,26 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 		// read joint positions, velocities, update model
 		sim->getJointPositions(robot_name_1, robot_1->_q);
 		sim->getJointVelocities(robot_name_1, robot_1->_dq);
-		robot_1->updateModel();
 
 		sim->getJointPositions(robot_name_2, robot_2->_q);
 		sim->getJointVelocities(robot_name_2, robot_2->_dq);
-		robot_2->updateModel();
 
 		sim->getJointPositions(robot_name_3, robot_3->_q);
 		sim->getJointVelocities(robot_name_3, robot_3->_dq);
-		robot_3->updateModel();
 
 		sim->getJointPositions(robot_name_4, robot_4->_q);
 		sim->getJointVelocities(robot_name_4, robot_4->_dq);
+
+		robot_1->updateModel();
+		robot_2->updateModel();
+		robot_3->updateModel();
 		robot_4->updateModel();
 
 		sim->getJointPositions(obj_name, object->_q);
 		sim->getJointVelocities(obj_name, object->_dq);
 		object->updateModel();
+
+
 
 		//cout << "After model updates" << "\n";
 
