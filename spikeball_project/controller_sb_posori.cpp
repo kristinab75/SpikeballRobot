@@ -403,8 +403,8 @@ int main() {
 		if (((x_vel_ball_prev(0) < 0) == (x_vel_ball(0) < 0)) && ((x_vel_ball_prev(1) < 0) == (x_vel_ball(1) < 0))) {
 			velHasDifSign = false;
 		} else {
-			//cout << "VEL CHANGED SIGNS \n";
-			//cout << "Ball position: " << x_ball.transpose() << "\n";
+			cout << "VEL CHANGED SIGNS \n";
+			cout << "Ball position: " << x_ball.transpose() << "\n";
 			velHasDifSign = true;
 		}
 
@@ -416,12 +416,12 @@ int main() {
 					passing = false;
 				} 
 			} else if (velHasDifSign) { //has spiked
-				//cout << "******* HIT ROBOT AND SPIKED ********\n";
+				cout << "******* HIT ROBOT AND SPIKED ********\n";
 				predictOn = false;
 				passing = false;
 			} else if (x_vel_ball(2) > 0 && !predictOn) { //hit net
-				//cout << "****** HIT NET ***** \n ";
-				predictOn = true;
+				cout << "****** HIT NET ***** \n ";
+				predictOn = true; 
 				hasCalculated = false;
 				sameTeam = false; //TODO: CHANGE TO RANDOMLY CHOOSING
 				if (sameTeam) { //passing next
@@ -443,20 +443,24 @@ int main() {
 			}
 		}
 
-
 		// Predicting end effector
 		if (predictOn) {
 			robot_des = getRobot(x_vel_ball, sameTeam, robot_des);
 			//if (counter % 500 == 0) cout << "Controlled robot: " << robot_des << "\n";
 			VectorXd targetNet(3);
-			targetNet << 0, 0, 0;
+			targetNet << 0, 0, .2032;
 			
-			if (!hasCalculated) {
-				x_pred = getPrediction(x_ball, x_vel_ball, targetNet, .5, center_pos[robot_des]);
+			if (!hasCalculated && robot_des == 0) {
+				x_pred = getPrediction(x_ball, x_vel_ball, targetNet, .4, center_pos[robot_des]);
+				R_pred = getOrientationPrediction(x_ball, x_vel_ball, targetNet, 0.4, x_pred); //<< cos(M_PI/2), -sin(M_PI/2), 0,
+							//sin(M_PI/2), cos(M_PI/2), 0,
+							//0, 0, 1; // .setIdentity(); //
+				//cout << "x_pred: " << x_pred.transpose() << "\n";
+				cout << "R_pred: \n" << R_pred << "\n";
 				hasCalculated = true;
 			}
+			//x_pred << 0.586719, 0.718577, 0.379529;
 			//if (counter % 500 == 0) cout << "Ball position: " << x_ball.transpose() << "\n";
-			//if (counter % 500 == 0) cout << "x_pred: " << x_pred.transpose() << "\n";
 			//if (counter % 500 == 0) {
 				//cout << "pos robot: " << xs[0].transpose() << "\n";
 				//x_world1(0) = x_world1(0) + 1;
@@ -465,7 +469,7 @@ int main() {
 				//cout << "\n";
 			//}
 			//x_pred << 0.58, 0.718, 0.76;
-			if (robot_des == 0)  {
+			/*if (robot_des == 0)  {
 				x_pred << 0.58, 0.718, 0.6;
 			} else if (robot_des == 1) {
 				x_pred << -0.58, 0.718, 0.6;
@@ -475,10 +479,11 @@ int main() {
 				x_pred << 0.58, -0.718, 0.6;
 			}
 			x_pred(0) = x_pred(0) - x_off_robot(robot_des);
-			x_pred(1) = x_pred(1) - y_off_robot(robot_des);
-			xs_des[robot_des] = x_pred;
+			x_pred(1) = x_pred(1) - y_off_robot(robot_des);*/
+			robot_des = 0;
+			xs_des[robot_des] = x_pred - center_pos[robot_des];
 			
-			//Rs_des[robot_des] = getOrientation();
+			Rs_des[robot_des] = R_pred;
 			controlled_robot = robot_des;
 		} else {
 			controlled_robot = -1;
@@ -491,7 +496,9 @@ int main() {
 		x_off << 0, 0, 0;
 		//xs_des[controlled_robot] = x_off; //xs_init[controlled_robot] + x_off;
 		
-		Rs_des[controlled_robot] = Rs_init[controlled_robot];
+		if (counter % 10000 == 0) cout << "Current R: \n" << Rs[controlled_robot] << "\n";
+		
+		//Rs_des[controlled_robot] = Rs_init[controlled_robot];
 		VectorXd command_zero(dof);
 //		command_zero.setZero();
 //		redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[0], command_zero);
@@ -696,60 +703,87 @@ VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
 
 MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, Vector3d endPos) {
 
-	double g = 9.81;
-	double t1 = (endPos(0) - initPos(0)) /  ( initVel(0));
+    /* Function Inputs */
+    // initPos      - [x,y,z] initial position
+    // initVel      - [vx, vy, vz] initial velocity
+    // targetPos    - [x,y,z] desired final position of ball
+    // r            - reachable radius around a robot
+    // endPos       - [x,y,z] robot position (position of impact w/ball)
 
-	Vector3d endVel;
-	endVel << initVel(0), initVel(1), -g*t1 + initVel(2);
+    /* Function Outputs */
+    // Rd           - [3x3] rotation matrix of end effector to get ball to desired position
+     
 
-	double angle_in = atan2(initVel(1), initVel(0));
-	Vector3d vecToTarget = endPos - targetPos;
-	double angle_out = atan2(vecToTarget(1), vecToTarget(0));
-	double rot_angle = (angle_in + angle_out)/2;
+    double g = 9.81;
+    double t1 = (endPos(0) - initPos(0)) /  ( initVel(0));
 
-	MatrixXd R0 = MatrixXd::Zero(3,3);
-	R0 << cos(angle_in), sin(angle_in), 0,
-	   -sin(angle_in), cos(angle_in), 0,
-	   0            , 0            , 1;
+    Vector3d endVel;
+    endVel << initVel(0), initVel(1), -g*t1 + initVel(2);
 
-	MatrixXd R1 = MatrixXd::Zero(3,3);
-	R1 << cos(rot_angle), -sin(rot_angle), 0,
-	   sin(rot_angle),  cos(rot_angle), 0,
-	   0             ,  0             , 1;
+    double angle_in = atan2(initVel(1), initVel(0)); // [rad] x,y angle in
+    Vector3d vecToTarget = endPos - targetPos;
+    double angle_out = atan2(vecToTarget(1), vecToTarget(0));
+    double rot_angle = (angle_in + angle_out)/2;
 
-	Vector3d endVel_prime = R0 * endVel; // check matrix dimensions
-	double z_angle_in = atan2(endVel_prime(2), endVel_prime(0));
+    MatrixXd R0 = MatrixXd::Zero(3,3);
+    R0 << cos(angle_in), sin(angle_in), 0,
+       -sin(angle_in), cos(angle_in), 0,
+        0            , 0            , 1;
 
-	double d = sqrt( pow((targetPos(0) - endPos(0)),2) + pow((targetPos(1) - endPos(1)),2)  );
-	double h = endPos(2) - targetPos(2);
-	double v0 = sqrt( pow(endVel(0),2) + pow(endVel(1),2) + pow(endVel(2),2) );
+    MatrixXd R1 = MatrixXd::Zero(3,3);
+    R1 << cos(rot_angle), -sin(rot_angle), 0,
+        sin(rot_angle),  cos(rot_angle), 0,
+        0             ,  0             , 1;
 
-	double theta = -M_PI/2;
-	double d_calc = 0;
+    Vector3d endVel_prime = R0 * endVel; // check matrix dimensions
+    double z_angle_in = atan2(endVel_prime(2), endVel_prime(0));
 
+    double d = sqrt( pow((targetPos(0) - endPos(0)),2) + pow((targetPos(1) - endPos(1)),2)  );
+    double h = endPos(2) - targetPos(2);
+    double v0 = sqrt( pow(endVel(0),2) + pow(endVel(1),2) + pow(endVel(2),2) );
 
-	while (abs(d-d_calc) > 0.1) {
+    double theta = -M_PI/2;
+    double d_calc = 0;
 
-		d_calc = (v0*cos(theta) * (v0*sin(theta) + sqrt( pow(v0*sin(theta),2) + 2*g*h)))/g;
+    // NOTE: This is likely going to be the slowest thing in this function. Can speed up by changing the theta increment
+    while (d > d_calc) {
+       d_calc = (v0*cos(theta) * (v0*sin(theta) + sqrt( pow(v0*sin(theta),2) + 2*g*h)))/g;
+       theta = theta + M_PI/(1*pow(10,3)); // increment up theta adjust to make algorithm faster
+       
+       if (theta > M_PI/2) {
+           std::cout << "Warning: Unable to reach target point!";
+           theta = -z_angle_in; // sets this so we simply reflect the ball if its not possible to reach the target
+           break;
+       }
+    }
 
-		theta = theta + M_PI/(1*pow(10,7)); // increment up theta
-
-		if (theta > M_PI/2) {
-			std::cout << "Warning: Unable to reach target point!";
-			break;
-		}
-	}
-
-	double new_z_angle = (z_angle_in - theta)/2;
+	double new_z_angle = (z_angle_in - theta)/2.0;
 
 	// second rotation about y'
 	MatrixXd R2 = MatrixXd::Zero(3,3);
+	MatrixXd R3 = MatrixXd::Zero(3,3);
+	MatrixXd R4 = MatrixXd::Zero(3,3);
+	MatrixXd R5 = MatrixXd::Zero(3,3);
 	R2 << cos(new_z_angle), 0, -sin(new_z_angle),
 	   0               , 1, 0,
 	   sin(new_z_angle), 0, cos(new_z_angle) ;
+	   
+	   double y_fix = -M_PI/2;
+	   R3 << cos(y_fix), 0, -sin(y_fix),
+	   0               , 1, 0,
+	   sin(y_fix), 0, cos(y_fix) ;
+	   
+	   R4 << 1, 0, 0,
+	          0, cos(y_fix), -sin(y_fix),
+	   		0,sin(y_fix),  cos(y_fix) ;
+	   		
+	   double z_fix = M_PI/2;
+	   R5 << cos(z_fix), -sin(z_fix), 0,
+	   		sin(z_fix),  cos(z_fix), 0,
+	   		0, 0, 1 ;
 
 	MatrixXd Rd = MatrixXd::Zero(3,3);
-	Rd = R1 * R2;
+	Rd = R1 * R2 * R4 * R5;
 
 	return Rd;
 
