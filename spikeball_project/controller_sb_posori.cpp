@@ -638,8 +638,7 @@ VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     
     /* Function Outputs */
     // endPos       - [x,y,z] desired position of end effector; if unreachable, returns [0,0,0]
-    
-
+        
     double g = 9.81;
     double x1 = 0;
     double y1 = 0;
@@ -678,16 +677,9 @@ VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
         }
 
         double t1 = (x1 - initPos(0)) / initVel(0); // [s] time to impact
-        double t2 = (y1 - initPos(1)) / initVel(1);
-
-		//if (t1 != t2) {
-			
-		//}
-
-	//cout << "t1: " << t1 << "\n";
-        double z1 = -(1/2)*g*pow(t1,2) + initVel(2)*t1 + initPos(2); // [m] z intercept point
-		//cout << "predicted position: " << x1 << "\t" << y1 << "\t" << z1 << "\n";
-
+    
+        double z1 = (-(0.5)*g*t1*t1) + (initVel(2)*t1) + (initPos(2)); // [m] z intercept point
+		
         if (z1 < 0) { // if reachable position
             endPos << 0,0,0;
         } else {
