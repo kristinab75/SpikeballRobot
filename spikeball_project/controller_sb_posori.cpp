@@ -160,10 +160,10 @@ int main() {
 	posori_task_1->_use_velocity_saturation_flag = false;
 #endif
 	posori_task_1->_use_velocity_saturation_flag = false;
-	posori_task_1->_kp_pos = 100.0;
-	posori_task_1->_kv_pos = 20.0;
-	posori_task_1->_kp_ori = 100.0;
-	posori_task_1->_kv_ori = 20.0;
+	posori_task_1->_kp_pos = 800.0;
+	posori_task_1->_kv_pos = 160.0;
+	posori_task_1->_kp_ori = 800.0;
+	posori_task_1->_kv_ori = 160.0;
 	//posori_task_1->_desired_velocity << 10, 10, 10;
 	//posori_task_1->_desired_angular_velocity << 10, 10, 10;
 	//posori_task_1->_desired_acceleration << 10, 10, 10;
@@ -301,7 +301,7 @@ int main() {
 	timer.setLoopFrequency(control_freq);   // 1 KHz
 	double last_time = timer.elapsedTime(); //secs
 	bool fTimerDidSleep = true;
-	timer.initializeTimer(1000000); // 1 ms pause before starting loop
+	timer.initializeTimer(1000000); // 1 ms pause before starting loopgggggggg
 	unsigned long long counter = 0;
 	runloop = true;
 
@@ -347,6 +347,8 @@ int main() {
 			robot_3->rotationInWorld(Rs_init[2], link_name);
 			robot_4->positionInWorld(xs_init[3], link_name, pos_in_link);
 			robot_4->rotationInWorld(Rs_init[3], link_name);
+			
+			//if (counter % 29 == 0) cout << "Rotation of robot 1: \n" << Rs_init[1] << "\n";
 
 			// initialize ball vel previous
 			x_vel_ball_prev << 1.8, 2, -0.5;
@@ -403,8 +405,8 @@ int main() {
 		if (((x_vel_ball_prev(0) < 0) == (x_vel_ball(0) < 0)) && ((x_vel_ball_prev(1) < 0) == (x_vel_ball(1) < 0))) {
 			velHasDifSign = false;
 		} else {
-			cout << "VEL CHANGED SIGNS \n";
-			cout << "Ball position: " << x_ball.transpose() << "\n";
+			//cout << "VEL CHANGED SIGNS \n";
+			//cout << "Ball position: " << x_ball.transpose() << "\n";
 			velHasDifSign = true;
 		}
 
@@ -416,11 +418,12 @@ int main() {
 					passing = false;
 				} 
 			} else if (velHasDifSign) { //has spiked
-				cout << "******* HIT ROBOT AND SPIKED ********\n";
+				//cout << "******* HIT ROBOT AND SPIKED ********\n";
 				predictOn = false;
 				passing = false;
 			} else if (x_vel_ball(2) > 0 && !predictOn) { //hit net
-				cout << "****** HIT NET ***** \n ";
+				//cout << "****** HIT NET ***** \n ";
+				cout << "Ball position: " << x_ball.transpose() << "\n";
 				predictOn = true; 
 				hasCalculated = false;
 				sameTeam = false; //TODO: CHANGE TO RANDOMLY CHOOSING
@@ -456,7 +459,7 @@ int main() {
 							//sin(M_PI/2), cos(M_PI/2), 0,
 							//0, 0, 1; // .setIdentity(); //
 				//cout << "x_pred: " << x_pred.transpose() << "\n";
-				cout << "R_pred: \n" << R_pred << "\n";
+				//cout << "R_pred: \n" << R_pred << "\n";
 				hasCalculated = true;
 			}
 			//x_pred << 0.586719, 0.718577, 0.379529;
@@ -481,13 +484,16 @@ int main() {
 			x_pred(0) = x_pred(0) - x_off_robot(robot_des);
 			x_pred(1) = x_pred(1) - y_off_robot(robot_des);*/
 			robot_des = 0;
+			//xs_des[robot_des] = xs[robot_des];
 			xs_des[robot_des] = x_pred - center_pos[robot_des];
-			
+			//Rs_des[robot_des] = Rs[robot_des];
 			Rs_des[robot_des] = R_pred;
 			controlled_robot = robot_des;
 		} else {
 			controlled_robot = -1;
 		}
+
+//Rs_des[0] = Rs_init[0];
 
 		// Change these values based on prediction algorithm output
 		//controlled_robot = stoi(redis_client.get(ACTIVE_ROBOT));
@@ -496,7 +502,7 @@ int main() {
 		x_off << 0, 0, 0;
 		//xs_des[controlled_robot] = x_off; //xs_init[controlled_robot] + x_off;
 		
-		if (counter % 10000 == 0) cout << "Current R: \n" << Rs[controlled_robot] << "\n";
+		//if (counter % 10000 == 0) cout << "Current R: \n" << Rs[controlled_robot] << "\n";
 		
 		//Rs_des[controlled_robot] = Rs_init[controlled_robot];
 		VectorXd command_zero(dof);
@@ -764,9 +770,15 @@ MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd t
 	MatrixXd R3 = MatrixXd::Zero(3,3);
 	MatrixXd R4 = MatrixXd::Zero(3,3);
 	MatrixXd R5 = MatrixXd::Zero(3,3);
+	MatrixXd R6 = MatrixXd::Zero(3,3);
 	R2 << cos(new_z_angle), 0, -sin(new_z_angle),
 	   0               , 1, 0,
 	   sin(new_z_angle), 0, cos(new_z_angle) ;
+	   
+	   R6 << 0, cos(M_PI/4), sin(M_PI/4),
+	   		0, -sin(M_PI/4), cos(M_PI/4),
+	   		1, 0, 0;
+	   		
 	   
 	   double y_fix = -M_PI/2;
 	   R3 << cos(y_fix), 0, -sin(y_fix),
@@ -777,7 +789,7 @@ MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd t
 	          0, cos(y_fix), -sin(y_fix),
 	   		0,sin(y_fix),  cos(y_fix) ;
 	   		
-	   double z_fix = M_PI/2;
+	   double z_fix = M_PI/2 + M_PI/4;
 	   R5 << cos(z_fix), -sin(z_fix), 0,
 	   		sin(z_fix),  cos(z_fix), 0,
 	   		0, 0, 1 ;

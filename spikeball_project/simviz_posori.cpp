@@ -127,7 +127,7 @@ int main() {
 	q_init_desired_1 *= M_PI/180.0;
 
 	VectorXd q_init_desired_2(7);
-	q_init_desired_2 << -120, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
+	q_init_desired_2 << 0, 0, 0, 0, 0, 0, 45; //<< -120, -15.0, -15.0, -105.0, 0.0, 90.0, 45.0;
 	q_init_desired_2 *= M_PI/180.0;
 
 	VectorXd q_init_desired_3(7);

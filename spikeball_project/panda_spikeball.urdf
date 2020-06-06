@@ -13,9 +13,9 @@
         </geometry>
       </visual>
       <collision>
-        <geometry>
+        <!--<geometry>
           <mesh filename="../../../model/panda/meshes/collision/link0.obj"/>
-        </geometry>
+        </geometry> -->
       </collision>
     </link>
     <link name="link1">
@@ -30,9 +30,9 @@
         </geometry>
       </visual>
       <collision>
-        <geometry>
+        <!--<geometry>
           <mesh filename="../../../model/panda/meshes/collision/link1.obj"/>
-        </geometry>
+        </geometry>-->
       </collision>
     </link>
     <link name="link2">
@@ -47,9 +47,9 @@
         </geometry>
       </visual>
       <collision>
-        <geometry>
+        <!--<geometry>
           <mesh filename="../../../model/panda/meshes/collision/link2.obj"/>
-        </geometry>
+        </geometry>-->
       </collision>
     </link>
     <link name="link3">
@@ -64,9 +64,9 @@
         </geometry>
       </visual>
       <collision>
-        <geometry>
+        <!--<geometry>
           <mesh filename="../../../model/panda/meshes/collision/link3.obj"/>
-        </geometry>
+        </geometry>-->
       </collision>
     </link>
     <link name="link4">
@@ -98,9 +98,9 @@
         </geometry>
       </visual>
       <collision>
-        <geometry>
+        <!--<geometry>
           <mesh filename="../../../model/panda/meshes/collision/link5.obj"/>
-        </geometry>
+        </geometry>-->
       </collision>
     </link>
     <link name="link6">
