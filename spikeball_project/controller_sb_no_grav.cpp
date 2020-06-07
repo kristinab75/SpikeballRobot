@@ -33,29 +33,25 @@ double sat(double x) {
 }
 
 bool sameTeambool() {
-	/*
-    int val = (rand() % 50);
-	if (val > 30) {
-		cout << "Pass the ball\n";
-		return true;
-	} else {
-		cout << "Spike the ball\n";
-		return false;
-     */
-
-    std::default_random_engine generator;
-    std::uniform_int_distribution<int> dist(0,1);
     
-    int val = dist(generator);
+    std::random_device rd;
+    std::default_random_engine gen(rd());
+    std::uniform_int_distribution<> dist(0,1);
+    
+    int val = dist(gen); 
+	cout << val << "\n";
     
     if (val == 0) {
-        return true;
+        return false;
 	}
-    return false;
+    return true;
 }
 
 int getNumPasses() {
-	return (1 + rand() % 2);
+    std::random_device rd;
+    std::default_random_engine gen(rd());
+    std::uniform_int_distribution<> dist(1,2);
+	return dist(gen); 
 }
 
 // ball detection functions
@@ -480,6 +476,7 @@ int main() {
 				hasCalculated = false;
 				if (currPass == numPasses) {	//if that was last pass
 					sameTeam = false;
+					//hasPassed = false;
 				}
 			}
 		}
