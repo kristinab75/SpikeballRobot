@@ -429,7 +429,7 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 		{
 			firstLoop = redis_client.getEigenMatrixJSON(FIRST_LOOP_KEY);
 			if (firstLoop(0) == 1) {
-				object->_dq(0) = -0.26667;
+				object->_dq(0) = -0.13333;
 				object->_dq(1) = .4;
 				object->_dq(2) = .4;
 				object->_q(0) = 0;

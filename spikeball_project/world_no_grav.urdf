@@ -3,28 +3,28 @@
 <world name="spikeball_world" gravity="0.0 0.0 0">
 
 	<robot name="panda_spikeball_1">
-		<model dir="./resources" path="panda_spikeball.urdf" name="panda_spikeball_1" />
+		<model dir="./resources" path="panda_spikeball_team1.urdf" name="panda_spikeball_1" />
 		<origin xyz="1.0 1.0 0.0" rpy="0 0 0" />
 	</robot>
 
 	<robot name="panda_spikeball_2">
-		<model dir="./resources" path="panda_spikeball.urdf" name="panda_spikeball_2" />
+		<model dir="./resources" path="panda_spikeball_team2.urdf" name="panda_spikeball_2" />
 		<origin xyz="-1.0 1.0 0.0" rpy="0 0 0" />
 	</robot>
 
 	<robot name="panda_spikeball_3">
-		<model dir="./resources" path="panda_spikeball.urdf" name="panda_spikeball_3" />
+		<model dir="./resources" path="panda_spikeball_team2.urdf" name="panda_spikeball_3" />
 		<origin xyz="-1.0 -1.0 0.0" rpy="0 0 0" />
 	</robot>
 
 	<robot name="panda_spikeball_4">
-		<model dir="./resources" path="panda_spikeball.urdf" name="panda_spikeball_4" />
+		<model dir="./resources" path="panda_spikeball_team1.urdf" name="panda_spikeball_4" />
 		<origin xyz="1.0 -1.0 0.0" rpy="0 0 0" />
 	</robot>
 
 	<robot name="ball">
 		<model dir="./resources" path="ball.urdf" name="ball" />
-		<origin xyz="-.6 -.6 0.6" rpy="0 0 0" />
+		<origin xyz="-.6 -.6 0.4" rpy="0 0 0" />
 	</robot>
 
 	<static_object name="Ground_With_Texture">
@@ -79,11 +79,11 @@
 		<lookat xyz="0.0 0.0 0.0" />
 	</light>
 
-	<!--<camera name="camera_fixed">
+	<camera name="camera_fixed">
 		<position xyz="0.01 0.01 4.0" />
 		<vertical xyz="0.0 0.0 1.0" />
 		<lookat xyz="0.01 -0.01 0.3" />
-	</camera> -->
+	</camera>
 
 	<!--<camera name="camera_fixed">
 		<position xyz="0 1.5 1.0" />
@@ -91,10 +91,10 @@
 		<lookat xyz="1 1 0.3" />
 	</camera>-->
 
-	<camera name="camera_fixed">
+	<!--<camera name="camera_fixed">
 		<position xyz="0 3.0 1.0" />
 		<vertical xyz="0.0 0.0 1.0" />
 		<lookat xyz="0 0 0.3" />
-	</camera>
+	</camera>-->
 
 </world>

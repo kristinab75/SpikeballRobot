@@ -155,12 +155,14 @@
         <geometry>
           <box size="0.25 0.01 0.25"/>
         </geometry>
+	<material name="blue"/>
       </visual>
       <collision>
 	<origin xyz ="0 .1 -.125" rpy="0 0 0" />
         <geometry>
           <box size="0.25 0.01 0.25"/>
         </geometry>
+	<material name="blue"/>
       </collision>
     </link>
     <joint name="joint1" type="revolute">

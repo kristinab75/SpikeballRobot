@@ -32,6 +32,22 @@ double sat(double x) {
 	}
 }
 
+bool sameTeambool() {
+
+	int val = (rand() % 50);
+	if (val > 30) {
+		cout << "Pass the ball\n";
+		return true;
+	} else {
+		cout << "Spike the ball\n";
+		return false;
+	}
+}
+
+int getNumPasses() {
+	return (1 + rand() % 2);
+}
+
 // ball detection functions
 Vector3d getNoisyPosition(Vector3d posInWorld);
 int getRobot(Vector3d x_vel_ball, bool sameTeam, bool hasPassed, int robotDes);
@@ -282,13 +298,20 @@ int main() {
 
 	// init control variables 
 	Vector3d x_ball, x_vel_ball, x_vel_ball_prev, x_pred;
-	Vector3d xs[4], xs_des[4], xs_init[4], center_pos[4];
+	Vector3d xs[4], xs_des[4], xs_init[4], center_pos[4], target_pos[4];
 	Matrix3d Rs[4], Rs_des[4], Rs_init[4];
 
 	center_pos[0] << 1, 1, 0;
 	center_pos[1] << -1, 1, 0;
 	center_pos[2] << -1, -1, 0;
 	center_pos[3] << 1, -1, 0;
+	
+	target_pos[3] << 1, 1, .5;
+	target_pos[2] << -1, 1, .5;
+	target_pos[1] << -1, -1, .5;
+	target_pos[0] << 1, -1, .5;
+	
+	
 
 	Matrix3d R_pred;
 	VectorXd output(4);
@@ -352,7 +375,7 @@ int main() {
 			//if (counter % 29 == 0) cout << "Rotation of robot 1: \n" << Rs_init[1] << "\n";
 
 			// initialize ball vel previous
-			x_vel_ball_prev << .6, .6, -.4;
+			x_vel_ball_prev << .4, .4, -.13333;
 
 			counter++;
 			continue;
@@ -393,7 +416,7 @@ int main() {
 		// Deal with initial ball position
 		x_ball(0) = x_ball(0) - .6;
 		x_ball(1) = x_ball(1) - .6;
-		x_ball(2) = x_ball(2) + .6;
+		x_ball(2) = x_ball(2) + .4;
 		
 
 
@@ -425,12 +448,12 @@ int main() {
 				passing = false;
 			} else if (x_vel_ball(2) > 0 && x_vel_ball_prev(2) < 0 && !predictOn && abs(x_ball(0)) < 0.5 && abs(x_ball(1)) < 0.5) { //hit net
 				//cout << "****** HIT NET ***** \n ";
-				cout << "Ball position: " << x_ball.transpose() << "\n";
+				//cout << "Ball position: " << x_ball.transpose() << "\n";
 				predictOn = true; 
 				hasCalculated = false;
-				sameTeam = true; //TODO: CHANGE TO RANDOMLY CHOOSING
+				sameTeam = sameTeambool();
 				if (sameTeam) { //passing next
-					numPasses = 1; //TODO: CHANGE TO RANDOMLY CHOOSING 
+					numPasses = getNumPasses();
 					currPass = 0;
 					passing = true;
 					hasPassed = false;
@@ -453,19 +476,27 @@ int main() {
 
 		// Predicting end effector
 		if (predictOn) {
-			VectorXd targetNet(3);
+			VectorXd target(3);
 
 			
 			//if (!hasCalculated && robot_des == 0) {
 			if (!hasCalculated) {
 				robot_des = getRobot(x_vel_ball, sameTeam, hasPassed, robot_des);
-				if ( robot_des == 0) targetNet << 1.0, -1.0, 0.5; //0, 0, .2032;
-				else targetNet << 0, 0, .2032;
-				x_pred = getPrediction(x_ball, x_vel_ball, targetNet, .4, center_pos[robot_des]);
-				R_pred = getOrientationPrediction(x_ball, x_vel_ball, targetNet, 0.4, x_pred); //<< cos(M_PI/2), -sin(M_PI/2), 0,
+				//if ( robot_des == 0) targetNet << 1.0, -1.0, 0.5; //0, 0, .2032;
+				//else targetNet << 0, 0, .2032;
+				if(!sameTeam) {
+					double randX = (rand() % 21 - 10) / 100.0;
+					double randY = (rand() % 21 - 10) / 100.0;
+					target << randX, randY, .2032;
+				} else {
+					target = target_pos[robot_des];
+				}
+				x_pred = getPrediction(x_ball, x_vel_ball, target, .4, center_pos[robot_des]);
+				R_pred = getOrientationPrediction(x_ball, x_vel_ball, target, 0.4, x_pred); //<< cos(M_PI/2), -sin(M_PI/2), 0,
 							//sin(M_PI/2), cos(M_PI/2), 0,
 							//0, 0, 1; // .setIdentity(); //
-				//cout << "x_pred: " << x_pred.transpose() << "\n";
+				cout << "x_pred: " << x_pred.transpose() << "\n";
+				//cout << "Target: " << targetNet.transpose() << "\n";
 				//cout << "R_pred: \n" << R_pred << "\n";
 				if(x_pred(0) == 0 && x_pred(1) == 0 && x_pred(2) == 0) {
 					controlled_robot = -1; 
@@ -830,3 +861,6 @@ int getRobot(Vector3d x_vel_ball, bool sameTeam, bool hasPassed, int robotDes) {
         }
         return returnRobot;
 }
+
+
+
