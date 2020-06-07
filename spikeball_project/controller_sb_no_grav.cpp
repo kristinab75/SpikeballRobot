@@ -33,15 +33,25 @@ double sat(double x) {
 }
 
 bool sameTeambool() {
-
-	int val = (rand() % 50);
+	/*
+    int val = (rand() % 50);
 	if (val > 30) {
 		cout << "Pass the ball\n";
 		return true;
 	} else {
 		cout << "Spike the ball\n";
 		return false;
+     */
+
+    std::default_random_engine generator;
+    std::uniform_int_distribution<int> dist(0,1);
+    
+    int val = dist(generator);
+    
+    if (val == 0) {
+        return true;
 	}
+    return false;
 }
 
 int getNumPasses() {
