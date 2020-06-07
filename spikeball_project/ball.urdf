@@ -65,7 +65,7 @@
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <!-- <mesh filename="../../../model/spikeball/meshes/collision/ball-take3.obj"/> -->
+           <!--<mesh filename="../../../model/spikeball/meshes/collision/ball-take3.obj"/> -->
           <!--<sphere radius="0.04445" />-->
 	  <sphere radius="0.06" />
         </geometry>

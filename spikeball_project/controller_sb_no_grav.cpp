@@ -34,7 +34,7 @@ double sat(double x) {
 
 // ball detection functions
 Vector3d getNoisyPosition(Vector3d posInWorld);
-int getRobot(Vector3d x_vel_ball, bool sameTeam, int robotDes);
+int getRobot(Vector3d x_vel_ball, bool sameTeam, bool hasPassed, int robotDes);
 VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, Vector3d centerPos);
 MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, Vector3d endPos);
 
@@ -318,6 +318,7 @@ int main() {
 	bool predictOn = false;
 	bool hasCalculated = false;
 	bool velHasDifSign = false;
+	bool hasPassed = false;
 	int numPasses = 0;
 	int currPass = 0;
 	int robot_des = 2;
@@ -419,6 +420,7 @@ int main() {
 				} 
 			} else if (velHasDifSign) { //has spiked
 				//cout << "******* HIT ROBOT AND SPIKED ********\n";
+				
 				predictOn = false;
 				passing = false;
 			} else if (x_vel_ball(2) > 0 && x_vel_ball_prev(2) < 0 && !predictOn && abs(x_ball(0)) < 0.5 && abs(x_ball(1)) < 0.5) { //hit net
@@ -426,11 +428,12 @@ int main() {
 				cout << "Ball position: " << x_ball.transpose() << "\n";
 				predictOn = true; 
 				hasCalculated = false;
-				sameTeam = false; //TODO: CHANGE TO RANDOMLY CHOOSING
+				sameTeam = true; //TODO: CHANGE TO RANDOMLY CHOOSING
 				if (sameTeam) { //passing next
-					numPasses = 2; //TODO: CHANGE TO RANDOMLY CHOOSING 
+					numPasses = 1; //TODO: CHANGE TO RANDOMLY CHOOSING 
 					currPass = 0;
 					passing = true;
+					hasPassed = false;
 				}
 			} else if (predictOn) { //going towards robot to spike
 				//if (counter % 500 == 0) cout << "Going towards robot\n";
@@ -439,7 +442,9 @@ int main() {
 			}
 		} else { // currently in a pass
 			if (velHasDifSign) { //hit robot that was passed to
+				hasPassed = true;
 				currPass++;
+				hasCalculated = false;
 				if (currPass == numPasses) {	//if that was last pass
 					sameTeam = false;
 				}
@@ -448,19 +453,20 @@ int main() {
 
 		// Predicting end effector
 		if (predictOn) {
-			robot_des = getRobot(x_vel_ball, sameTeam, robot_des);
 			VectorXd targetNet(3);
-			if ( robot_des == 0) targetNet << 1.0, -1.0, 0.0; //0, 0, .2032;
-			else targetNet << 0, 0, .2032;
+
 			
 			//if (!hasCalculated && robot_des == 0) {
 			if (!hasCalculated) {
+				robot_des = getRobot(x_vel_ball, sameTeam, hasPassed, robot_des);
+				if ( robot_des == 0) targetNet << 1.0, -1.0, 0.5; //0, 0, .2032;
+				else targetNet << 0, 0, .2032;
 				x_pred = getPrediction(x_ball, x_vel_ball, targetNet, .4, center_pos[robot_des]);
 				R_pred = getOrientationPrediction(x_ball, x_vel_ball, targetNet, 0.4, x_pred); //<< cos(M_PI/2), -sin(M_PI/2), 0,
 							//sin(M_PI/2), cos(M_PI/2), 0,
 							//0, 0, 1; // .setIdentity(); //
 				//cout << "x_pred: " << x_pred.transpose() << "\n";
-				cout << "R_pred: \n" << R_pred << "\n";
+				//cout << "R_pred: \n" << R_pred << "\n";
 				if(x_pred(0) == 0 && x_pred(1) == 0 && x_pred(2) == 0) {
 					controlled_robot = -1; 
 					hasCalculated = true;
@@ -486,7 +492,7 @@ int main() {
 		if (counter % 500 == 0) {
 			//cout << "Ball position: " << x_ball.transpose() << "\n";
 			//cout << "pos robot: " << xs[0].transpose() << "\n";
-			cout << "Current Rotation: \n" << Rs[0] << "\n";
+			//cout << "Current Rotation: \n" << Rs[0] << "\n";
 			//cout << "\n";
 		}
 		// Change these values based on prediction algorithm output
@@ -724,7 +730,7 @@ MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd t
     
 //
     double d = sqrt( pow((targetPos(0) - endPos(0)),2) + pow((targetPos(1) - endPos(1)),2)  );
-    double h = endPos(2) - targetPos(2);
+    double h = targetPos(2) - endPos(2);
 //   double v0 = sqrt( pow(endVel(0),2) + pow(endVel(1),2) + pow(endVel(2),2) );
 //
 //   double theta = -M_PI/2;
@@ -782,32 +788,45 @@ MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd t
 	return Rd;
 }
 
-int getRobot(Vector3d x_vel_ball, bool sameTeam, int robotDes) {
-	/* must initialize robotDes = 0 outside this function
-	   for the first move of initializing the ball sameTeam = false, goes into if statement
-	   to assign a value for robotDes. Then it always keeps track of who has the ball. 
-	 */
-	int returnRobot;
-	if (sameTeam == false) {
-		if (x_vel_ball[0] > 0 && x_vel_ball[1] > 0) {
-			returnRobot = 0;
-		} else if (x_vel_ball[0] > 0 && x_vel_ball[1] <= 0) {
-			returnRobot = 3;
-		} else if (x_vel_ball[0] <= 0 && x_vel_ball[1] > 0) {
-			returnRobot = 1;
-		} else {
-			returnRobot = 2;
-		}
-	} else {
-		if (robotDes == 0) {
-			returnRobot = 3;
-		} else if (robotDes == 3) {
-			returnRobot = 0;
-		} else if (robotDes == 1) {
-			returnRobot = 2;
-		} else {
-			returnRobot = 1;
-		}
-	}
-	return returnRobot;
+int getRobot(Vector3d x_vel_ball, bool sameTeam, bool hasPassed, int robotDes) {
+    /* must initialize robotDes = 0 outside this function
+     for the first move of initializing the ball sameTeam = false, goes into if statement
+     to assign a value for robotDes. Then it always keeps track of who has the ball. 
+     */
+
+	 int returnRobot;
+	 if (sameTeam && hasPassed) {
+
+                if (robotDes == 0) {
+                        returnRobot = 3;
+                } else if (robotDes == 3) {
+                        returnRobot = 0;
+                } else if (robotDes == 1) {
+                        returnRobot = 2;
+                } else {
+                        returnRobot = 1;
+                }
+	 } else if (!sameTeam && hasPassed) {
+                if (robotDes == 0) {
+                        returnRobot = 3;
+                } else if (robotDes == 3) {
+                        returnRobot = 0;
+                } else if (robotDes == 1) {
+                        returnRobot = 2;
+                } else {
+                        returnRobot = 1;
+                }
+
+	 } else {
+                if (x_vel_ball[0] > 0 && x_vel_ball[1] > 0) {
+                        returnRobot = 0;
+                } else if (x_vel_ball[0] > 0 && x_vel_ball[1] <= 0) {
+                        returnRobot = 3;
+                } else if (x_vel_ball[0] <= 0 && x_vel_ball[1] > 0) {
+                        returnRobot = 1;
+                } else {
+                        returnRobot = 2;
+                }
+        }
+        return returnRobot;
 }
