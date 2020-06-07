@@ -482,6 +482,11 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 			command_torques[1].setZero();
 			command_torques[2].setZero();
 			command_torques[0].setZero();
+		} else if (robot_des.compare("-1") == 0) {
+			command_torques[3].setZero();
+			command_torques[1].setZero();
+			command_torques[2].setZero();
+			command_torques[0].setZero();
 		} 
 
 
@@ -524,6 +529,11 @@ void simulation(Sai2Model::Sai2Model* robot_1, Sai2Model::Sai2Model* robot_2, Sa
 			sim->setJointVelocities(robot_name_2, robot_vel_zero);
 			sim->setJointVelocities(robot_name_3, robot_vel_zero);
 			sim->setJointVelocities(robot_name_1, robot_vel_zero);
+		} else if (robot_des.compare("-1") == 0) {
+			sim->setJointVelocities(robot_name_2, robot_vel_zero);
+			sim->setJointVelocities(robot_name_3, robot_vel_zero);
+			sim->setJointVelocities(robot_name_1, robot_vel_zero);
+			sim->setJointVelocities(robot_name_4, robot_vel_zero);
 		}
 
 		// integrate forward

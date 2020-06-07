@@ -216,10 +216,10 @@ int main() {
 #else
 	posori_task_3->_use_velocity_saturation_flag = false;
 #endif
-	posori_task_3->_kp_pos = 100.0;
-	posori_task_3->_kv_pos = 20.0;
-	posori_task_3->_kp_ori = 100.0;
-	posori_task_3->_kv_ori = 20.0;
+	posori_task_3->_kp_pos = 800.0;
+	posori_task_3->_kv_pos = 160.0;
+	posori_task_3->_kp_ori = 800.0;
+	posori_task_3->_kv_ori = 160.0;
 	//posori_task_3->_desired_velocity << 10, 10, 10;
 	//posori_task_3->_desired_angular_velocity << 10, 10, 10;
 	//posori_task_3->_desired_acceleration << 10, 10, 10;
@@ -419,11 +419,12 @@ int main() {
 				} 
 			} else if (velHasDifSign) { //has spiked
 				//cout << "******* HIT ROBOT AND SPIKED ********\n";
+				//cout << "Ball position: " << x_ball.transpose() << "\n";
 				predictOn = false;
 				passing = false;
-			} else if (x_vel_ball(2) > 0 && !predictOn) { //hit net
+			} else if (x_vel_ball(2) > 0 && x_vel_ball_prev(2) <0 && !predictOn && abs(x_ball(0)) < 0.5 && abs(x_ball(1)) < 0.5) { //hit net
 				//cout << "****** HIT NET ***** \n ";
-				cout << "Ball position: " << x_ball.transpose() << "\n";
+				//cout << "Ball position: " << x_ball.transpose() << "\n";
 				predictOn = true; 
 				hasCalculated = false;
 				sameTeam = false; //TODO: CHANGE TO RANDOMLY CHOOSING
@@ -449,16 +450,25 @@ int main() {
 		// Predicting end effector
 		if (predictOn) {
 			robot_des = getRobot(x_vel_ball, sameTeam, robot_des);
-			//if (counter % 500 == 0) cout << "Controlled robot: " << robot_des << "\n";
+			//if (counter % 500 == 0) cout << "Controlled robot: " << controlled_robot << "\n";
 			VectorXd targetNet(3);
 			targetNet << 0, 0, .2032;
+			Vector3d x_pred_check;
+			x_pred_check << 0,0,0;
 			
-			if (!hasCalculated && robot_des == 0) {
+			if (!hasCalculated) { // && robot_des == 0) {
 				x_pred = getPrediction(x_ball, x_vel_ball, targetNet, .4, center_pos[robot_des]);
+				//cout << "x_pred: " << x_pred.transpose() << "\n";
+				if(x_pred(0) == 0 && x_pred(1) == 0 && x_pred(2) == 0) {
+					controlled_robot = -1; 
+					hasCalculated = true;
+					predictOn = false;
+					
+					continue;
+				}
 				R_pred = getOrientationPrediction(x_ball, x_vel_ball, targetNet, 0.4, x_pred); //<< cos(M_PI/2), -sin(M_PI/2), 0,
 							//sin(M_PI/2), cos(M_PI/2), 0,
 							//0, 0, 1; // .setIdentity(); //
-				//cout << "x_pred: " << x_pred.transpose() << "\n";
 				//cout << "R_pred: \n" << R_pred << "\n";
 				hasCalculated = true;
 			}
@@ -483,7 +493,7 @@ int main() {
 			}
 			x_pred(0) = x_pred(0) - x_off_robot(robot_des);
 			x_pred(1) = x_pred(1) - y_off_robot(robot_des);*/
-			robot_des = 0;
+			//robot_des = 0;
 			//xs_des[robot_des] = xs[robot_des];
 			xs_des[robot_des] = x_pred - center_pos[robot_des];
 			//Rs_des[robot_des] = Rs[robot_des];
@@ -591,7 +601,7 @@ int main() {
 			joint_task_4->computeTorques(joint_task_torques[3]);
 			control_torques[3] = posori_task_torques[3] + joint_task_torques[3];
 			redis_client.setEigenMatrixJSON(JOINT_TORQUES_COMMANDED_KEYS[3], posori_task_torques[3]);
-		}
+		}	
 
 		x_vel_ball_prev = x_vel_ball;
 		counter++;
@@ -693,7 +703,7 @@ VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
     
         double z1 = (-(0.5)*g*t1*t1) + (initVel(2)*t1) + (initPos(2)); // [m] z intercept point
 		
-        if (z1 < 0) { // if reachable position
+        if (z1 < 0) { // if not reachable position
             endPos << 0,0,0;
         } else {
             endPos << x1,y1,z1;

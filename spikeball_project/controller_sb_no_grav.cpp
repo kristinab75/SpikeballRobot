@@ -160,10 +160,10 @@ int main() {
 	posori_task_1->_use_velocity_saturation_flag = false;
 #endif
 	posori_task_1->_use_velocity_saturation_flag = false;
-	posori_task_1->_kp_pos = 800.0;
-	posori_task_1->_kv_pos = 160.0;
-	posori_task_1->_kp_ori = 800.0;
-	posori_task_1->_kv_ori = 160.0;
+	posori_task_1->_kp_pos = 400.0;
+	posori_task_1->_kv_pos = 80.0;
+	posori_task_1->_kp_ori = 400.0;
+	posori_task_1->_kv_ori = 80.0;
 	//posori_task_1->_desired_velocity << 10, 10, 10;
 	//posori_task_1->_desired_angular_velocity << 10, 10, 10;
 	//posori_task_1->_desired_acceleration << 10, 10, 10;
@@ -188,10 +188,10 @@ int main() {
 #else
 	posori_task_2->_use_velocity_saturation_flag = false;
 #endif
-	posori_task_2->_kp_pos = 100.0;
-	posori_task_2->_kv_pos = 20.0;
-	posori_task_2->_kp_ori = 100.0;
-	posori_task_2->_kv_ori = 20.0;
+	posori_task_2->_kp_pos = 400.0;
+	posori_task_2->_kv_pos = 80.0;
+	posori_task_2->_kp_ori = 400.0;
+	posori_task_2->_kv_ori = 80.0;
 	//posori_task_2->_desired_velocity << 10, 10, 10;
 	//posori_task_2->_desired_angular_velocity << 10, 10, 10;
 	//posori_task_2->_desired_acceleration << 10, 10, 10;
@@ -216,10 +216,10 @@ int main() {
 #else
 	posori_task_3->_use_velocity_saturation_flag = false;
 #endif
-	posori_task_3->_kp_pos = 100.0;
-	posori_task_3->_kv_pos = 20.0;
-	posori_task_3->_kp_ori = 100.0;
-	posori_task_3->_kv_ori = 20.0;
+	posori_task_3->_kp_pos = 400.0;
+	posori_task_3->_kv_pos = 80.0;
+	posori_task_3->_kp_ori = 400.0;
+	posori_task_3->_kv_ori = 80.0;
 	//posori_task_3->_desired_velocity << 10, 10, 10;
 	//posori_task_3->_desired_angular_velocity << 10, 10, 10;
 	//posori_task_3->_desired_acceleration << 10, 10, 10;
@@ -245,10 +245,10 @@ int main() {
 	posori_task_4->_use_velocity_saturation_flag = false;
 #endif
 	posori_task_4->_use_velocity_saturation_flag = false;
-	posori_task_4->_kp_pos = 100.0;
-	posori_task_4->_kv_pos = 20.0;
-	posori_task_4->_kp_ori = 100.0;
-	posori_task_4->_kv_ori = 20.0;
+	posori_task_4->_kp_pos = 400.0;
+	posori_task_4->_kv_pos = 80.0;
+	posori_task_4->_kp_ori = 400.0;
+	posori_task_4->_kv_ori = 80.0;
 	//posori_task_4->_desired_velocity << 10, 10, 10;
 	//posori_task_4->_desired_angular_velocity << 10, 10, 10;
 	//posori_task_4->_desired_acceleration << 10, 10, 10;
@@ -351,7 +351,7 @@ int main() {
 			//if (counter % 29 == 0) cout << "Rotation of robot 1: \n" << Rs_init[1] << "\n";
 
 			// initialize ball vel previous
-			x_vel_ball_prev << 1.8, 2, -0.5;
+			x_vel_ball_prev << .6, .6, -.4;
 
 			counter++;
 			continue;
@@ -421,7 +421,7 @@ int main() {
 				//cout << "******* HIT ROBOT AND SPIKED ********\n";
 				predictOn = false;
 				passing = false;
-			} else if (x_vel_ball(2) > 0 && !predictOn) { //hit net
+			} else if (x_vel_ball(2) > 0 && x_vel_ball_prev(2) < 0 && !predictOn && abs(x_ball(0)) < 0.5 && abs(x_ball(1)) < 0.5) { //hit net
 				//cout << "****** HIT NET ***** \n ";
 				cout << "Ball position: " << x_ball.transpose() << "\n";
 				predictOn = true; 
@@ -460,6 +460,13 @@ int main() {
 							//0, 0, 1; // .setIdentity(); //
 				//cout << "x_pred: " << x_pred.transpose() << "\n";
 				//cout << "R_pred: \n" << R_pred << "\n";
+				if(x_pred(0) == 0 && x_pred(1) == 0 && x_pred(2) == 0) {
+					controlled_robot = -1; 
+					hasCalculated = true;
+					predictOn = false;
+					
+					continue;
+				}
 				hasCalculated = true;
 			}
 			if (counter % 500 == 0) {
