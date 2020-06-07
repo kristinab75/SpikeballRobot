@@ -164,10 +164,10 @@ MatrixXd getOrientationPredictionNoGravity(VectorXd initPos, VectorXd initVel, V
    endVel << initVel(0), initVel(1), initVel(2);
 
    double angle_in = atan2(initVel(1), initVel(0)); // [rad] x,y angle in
-//   Vector3d vecToTarget = endPos - targetPos;
-//    double angle_out = 0.0; // atan2(vecToTarget(1), vecToTarget(0));
+    Vector3d vecToTarget = endPos - targetPos;
+    double angle_out = atan2(vecToTarget(1), vecToTarget(0));
     
-    double rot_angle = angle_in;
+    double rot_angle = (angle_in + angle_out)/2.0;
 
    MatrixXd R0 = MatrixXd::Zero(3,3);
    R0 << cos(angle_in), sin(angle_in), 0,
@@ -183,8 +183,8 @@ MatrixXd getOrientationPredictionNoGravity(VectorXd initPos, VectorXd initVel, V
    double z_angle_in = atan2(endVel_prime(2), endVel_prime(0));
     
 //
-//   double d = sqrt( pow((targetPos(0) - endPos(0)),2) + pow((targetPos(1) - endPos(1)),2)  );
-//   double h = endPos(2) - targetPos(2);
+    double d = sqrt( pow((targetPos(0) - endPos(0)),2) + pow((targetPos(1) - endPos(1)),2)  );
+    double h = endPos(2) - targetPos(2);
 //   double v0 = sqrt( pow(endVel(0),2) + pow(endVel(1),2) + pow(endVel(2),2) );
 //
 //   double theta = -M_PI/2;
@@ -201,8 +201,10 @@ MatrixXd getOrientationPredictionNoGravity(VectorXd initPos, VectorXd initVel, V
 //          break;
 //      }
 //   }
+    
+    double theta = atand2(h,d);
 
-    double new_z_angle = z_angle_in;
+    double new_z_angle = (z_angle_in - theta)/2.0;
 
 
 	// second rotation about y'
