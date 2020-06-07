@@ -681,61 +681,63 @@ VectorXd getPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, d
 
 MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd targetPos, double r, Vector3d endPos) {
 
-    /* Function Inputs */
-    // initPos      - [x,y,z] initial position
-    // initVel      - [vx, vy, vz] initial velocity
-    // targetPos    - [x,y,z] desired final position of ball
-    // r            - reachable radius around a robot
-    // endPos       - [x,y,z] robot position (position of impact w/ball)
+   /* Function Inputs */
+   // initPos      - [x,y,z] initial position
+   // initVel      - [vx, vy, vz] initial velocity
+   // targetPos    - [x,y,z] desired final position of ball
+   // r            - reachable radius around a robot
+   // endPos       - [x,y,z] robot position (position of impact w/ball)
 
-    /* Function Outputs */
-    // Rd           - [3x3] rotation matrix of end effector to get ball to desired position
-     
+   /* Function Outputs */
+   // Rd           - [3x3] rotation matrix of end effector to get ball to desired position
+    
 
-    double g = 0.0;
-    double t1 = (endPos(0) - initPos(0)) /  ( initVel(0));
+   double t1 = (endPos(0) - initPos(0)) /  ( initVel(0));
 
-    Vector3d endVel;
-    endVel << initVel(0), initVel(1), -g*t1 + initVel(2);
+   Vector3d endVel;
+   endVel << initVel(0), initVel(1), initVel(2);
 
-    double angle_in = atan2(initVel(1), initVel(0)); // [rad] x,y angle in
-    Vector3d vecToTarget = endPos - targetPos;
-    double angle_out = atan2(vecToTarget(1), vecToTarget(0));
-    double rot_angle = (angle_in + angle_out)/2;
+   double angle_in = atan2(initVel(1), initVel(0)); // [rad] x,y angle in
+//   Vector3d vecToTarget = endPos - targetPos;
+//    double angle_out = 0.0; // atan2(vecToTarget(1), vecToTarget(0));
+    
+    double rot_angle = angle_in;
 
-    MatrixXd R0 = MatrixXd::Zero(3,3);
-    R0 << cos(angle_in), sin(angle_in), 0,
-       -sin(angle_in), cos(angle_in), 0,
-        0            , 0            , 1;
+   MatrixXd R0 = MatrixXd::Zero(3,3);
+   R0 << cos(angle_in), sin(angle_in), 0,
+      -sin(angle_in), cos(angle_in), 0,
+       0            , 0            , 1;
 
-    MatrixXd R1 = MatrixXd::Zero(3,3);
-    R1 << cos(rot_angle), -sin(rot_angle), 0,
-        sin(rot_angle),  cos(rot_angle), 0,
-        0             ,  0             , 1;
+   MatrixXd R1 = MatrixXd::Zero(3,3);
+   R1 << cos(rot_angle), -sin(rot_angle), 0,
+       sin(rot_angle),  cos(rot_angle), 0,
+       0             ,  0             , 1;
 
-    Vector3d endVel_prime = R0 * endVel; // check matrix dimensions
-    double z_angle_in = atan2(endVel_prime(2), endVel_prime(0));
+   Vector3d endVel_prime = R0 * endVel; // check matrix dimensions
+   double z_angle_in = atan2(endVel_prime(2), endVel_prime(0));
+    
+//
+//   double d = sqrt( pow((targetPos(0) - endPos(0)),2) + pow((targetPos(1) - endPos(1)),2)  );
+//   double h = endPos(2) - targetPos(2);
+//   double v0 = sqrt( pow(endVel(0),2) + pow(endVel(1),2) + pow(endVel(2),2) );
+//
+//   double theta = -M_PI/2;
+//   double d_calc = 0;
 
-    double d = sqrt( pow((targetPos(0) - endPos(0)),2) + pow((targetPos(1) - endPos(1)),2)  );
-    double h = endPos(2) - targetPos(2);
-    double v0 = sqrt( pow(endVel(0),2) + pow(endVel(1),2) + pow(endVel(2),2) );
+   // NOTE: This is likely going to be the slowest thing in this function. Can speed up by changing the theta increment
+//   while (d > d_calc) {
+//      d_calc = (v0*cos(theta) * (v0*sin(theta) + sqrt( pow(v0*sin(theta),2) + 2*g*h)))/g;
+//      theta = theta + M_PI/(1*pow(10,3)); // increment up theta adjust to make algorithm faster
+//
+//      if (theta > M_PI/2) {
+//          std::cout << "Warning: Unable to reach target point!";
+//          theta = -z_angle_in; // sets this so we simply reflect the ball if its not possible to reach the target
+//          break;
+//      }
+//   }
 
-    double theta = -M_PI/2;
-    double d_calc = 0;
+    double new_z_angle = z_angle_in;
 
-    // NOTE: This is likely going to be the slowest thing in this function. Can speed up by changing the theta increment
-    while (d > d_calc) {
-       d_calc = (v0*cos(theta) * (v0*sin(theta) + sqrt( pow(v0*sin(theta),2) + 2*g*h)))/g;
-       theta = theta + M_PI/(1*pow(10,3)); // increment up theta adjust to make algorithm faster
-       
-       if (theta > M_PI/2) {
-           std::cout << "Warning: Unable to reach target point!";
-           theta = -z_angle_in; // sets this so we simply reflect the ball if its not possible to reach the target
-           break;
-       }
-    }
-
-	double new_z_angle = (z_angle_in - theta)/2.0;
 
 	// second rotation about y'
 	MatrixXd R2 = MatrixXd::Zero(3,3);
@@ -770,7 +772,6 @@ MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd t
 	Rd = R1 * R2 * R4 * R5;
 
 	return Rd;
-
 }
 
 int getRobot(Vector3d x_vel_ball, bool sameTeam, int robotDes) {

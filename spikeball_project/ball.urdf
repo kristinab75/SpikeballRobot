@@ -60,7 +60,7 @@
           <!--<mesh filename="../../../model/spikeball/meshes/visual/ball-take3.obj"/>-->
           <sphere radius="0.06" />
         </geometry>
-		<material name="yellow"/>
+	<material name="yellow"/>
       </visual>
       <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
@@ -69,6 +69,7 @@
           <!--<sphere radius="0.04445" />-->
 	  <sphere radius="0.06" />
         </geometry>
+	<material name="yellow"/>
       </collision>
     </link>
     

@@ -204,14 +204,38 @@ MatrixXd getOrientationPredictionNoGravity(VectorXd initPos, VectorXd initVel, V
 
     double new_z_angle = z_angle_in;
 
-   // second rotation about y'
-   MatrixXd R2 = MatrixXd::Zero(3,3);
-   R2 << cos(new_z_angle), 0, -sin(new_z_angle),
-        0                , 1,  0,
-        sin(new_z_angle) , 0,  cos(new_z_angle);
 
-   MatrixXd Rd = MatrixXd::Zero(3,3);
-   Rd = R1 * R2;
+	// second rotation about y'
+	MatrixXd R2 = MatrixXd::Zero(3,3);
+	MatrixXd R3 = MatrixXd::Zero(3,3);
+	MatrixXd R4 = MatrixXd::Zero(3,3);
+	MatrixXd R5 = MatrixXd::Zero(3,3);
+	MatrixXd R6 = MatrixXd::Zero(3,3);
+	R2 << cos(new_z_angle), 0, -sin(new_z_angle),
+	   0               , 1, 0,
+	   sin(new_z_angle), 0, cos(new_z_angle) ;
+	   
+	   R6 << 0, cos(M_PI/4), sin(M_PI/4),
+	   		0, -sin(M_PI/4), cos(M_PI/4),
+	   		1, 0, 0;
+	   		
+	   
+	   double y_fix = -M_PI/2;
+	   R3 << cos(y_fix), 0, -sin(y_fix),
+	   0               , 1, 0,
+	   sin(y_fix), 0, cos(y_fix) ;
+	   
+	   R4 << 1, 0, 0,
+	          0, cos(y_fix), -sin(y_fix),
+	   		0,sin(y_fix),  cos(y_fix) ;
+	   		
+	   double z_fix = M_PI/2 + M_PI/4;
+	   R5 << cos(z_fix), -sin(z_fix), 0,
+	   		sin(z_fix),  cos(z_fix), 0,
+	   		0, 0, 1 ;
 
-   return Rd;
+	MatrixXd Rd = MatrixXd::Zero(3,3);
+	Rd = R1 * R2 * R4 * R5;
+
+	return Rd;
 }
