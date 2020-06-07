@@ -428,7 +428,7 @@ int main() {
 				hasCalculated = false;
 				sameTeam = false; //TODO: CHANGE TO RANDOMLY CHOOSING
 				if (sameTeam) { //passing next
-					numPasses = 1; //TODO: CHANGE TO RANDOMLY CHOOSING 
+					numPasses = 2; //TODO: CHANGE TO RANDOMLY CHOOSING 
 					currPass = 0;
 					passing = true;
 				}
@@ -450,7 +450,8 @@ int main() {
 		if (predictOn) {
 			robot_des = getRobot(x_vel_ball, sameTeam, robot_des);
 			VectorXd targetNet(3);
-			targetNet << 0, 0, .2032;
+			if ( robot_des == 0) targetNet << 1.0, -1.0, 0.0; //0, 0, .2032;
+			else targetNet << 0, 0, .2032;
 			
 			//if (!hasCalculated && robot_des == 0) {
 			if (!hasCalculated) {
@@ -459,7 +460,7 @@ int main() {
 							//sin(M_PI/2), cos(M_PI/2), 0,
 							//0, 0, 1; // .setIdentity(); //
 				//cout << "x_pred: " << x_pred.transpose() << "\n";
-				//cout << "R_pred: \n" << R_pred << "\n";
+				cout << "R_pred: \n" << R_pred << "\n";
 				if(x_pred(0) == 0 && x_pred(1) == 0 && x_pred(2) == 0) {
 					controlled_robot = -1; 
 					hasCalculated = true;
@@ -482,7 +483,12 @@ int main() {
 			controlled_robot = -1;
 		}
 
-
+		if (counter % 500 == 0) {
+			//cout << "Ball position: " << x_ball.transpose() << "\n";
+			//cout << "pos robot: " << xs[0].transpose() << "\n";
+			cout << "Current Rotation: \n" << Rs[0] << "\n";
+			//cout << "\n";
+		}
 		// Change these values based on prediction algorithm output
 		
 		redis_client.set(ACTIVE_ROBOT, to_string(controlled_robot));
@@ -698,10 +704,10 @@ MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd t
    endVel << initVel(0), initVel(1), initVel(2);
 
    double angle_in = atan2(initVel(1), initVel(0)); // [rad] x,y angle in
-//   Vector3d vecToTarget = endPos - targetPos;
-//    double angle_out = 0.0; // atan2(vecToTarget(1), vecToTarget(0));
+    Vector3d vecToTarget = endPos - targetPos;
+    double angle_out = atan2(vecToTarget(1), vecToTarget(0));
     
-    double rot_angle = angle_in;
+    double rot_angle = (angle_in + angle_out)/2.0;
 
    MatrixXd R0 = MatrixXd::Zero(3,3);
    R0 << cos(angle_in), sin(angle_in), 0,
@@ -717,8 +723,8 @@ MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd t
    double z_angle_in = atan2(endVel_prime(2), endVel_prime(0));
     
 //
-//   double d = sqrt( pow((targetPos(0) - endPos(0)),2) + pow((targetPos(1) - endPos(1)),2)  );
-//   double h = endPos(2) - targetPos(2);
+    double d = sqrt( pow((targetPos(0) - endPos(0)),2) + pow((targetPos(1) - endPos(1)),2)  );
+    double h = endPos(2) - targetPos(2);
 //   double v0 = sqrt( pow(endVel(0),2) + pow(endVel(1),2) + pow(endVel(2),2) );
 //
 //   double theta = -M_PI/2;
@@ -735,8 +741,10 @@ MatrixXd getOrientationPrediction(VectorXd initPos, VectorXd initVel, VectorXd t
 //          break;
 //      }
 //   }
+    
+    double theta = atan2(h,d);
 
-    double new_z_angle = z_angle_in;
+    double new_z_angle = (z_angle_in - theta)/2.0;
 
 
 	// second rotation about y'
